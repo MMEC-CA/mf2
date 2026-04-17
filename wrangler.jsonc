@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mf2",
+  "compatibility_date": "2026-04-16",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "."
+  },
+  "routes": [
+    {
+      "pattern": "erd.mmec.ca/mf2/*",
+      "zone_name": "mmec.ca"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}
