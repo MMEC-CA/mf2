@@ -1,11 +1,1488 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>mf2</title>
-  </head>
-  <body>
-    <p>mf2</p>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Police Commander</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg0:#020617;--bg1:#0f172a;--bg2:#1e293b;--bg3:#334155;--bg4:#475569;
+  --blue:#3b82f6;--blue-d:#1d4ed8;--blue-l:#93c5fd;
+  --red:#dc2626;--red-l:#f87171;
+  --gold:#d97706;--gold-l:#fcd34d;
+  --green:#059669;--green-l:#6ee7b7;
+  --purple:#7c3aed;--purple-l:#c4b5fd;
+  --orange:#ea580c;--orange-l:#fdba74;
+  --cyan:#0891b2;--cyan-l:#67e8f9;
+  --t1:#f8fafc;--t2:#cbd5e1;--t3:#64748b;
+  --border:rgba(255,255,255,0.06);
+}
+html,body{width:100%;height:100%;overflow:hidden}
+body{background:var(--bg0);color:var(--t1);font-family:'Rajdhani','Segoe UI',sans-serif;display:flex;flex-direction:column;font-size:14px;line-height:1.4}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg1)}
+::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px}
+
+/* ── HEADER ── */
+#header{display:flex;align-items:center;padding:0 14px;height:54px;background:linear-gradient(180deg,#0f172a,#080d1a);border-bottom:1px solid var(--border);gap:12px;flex-shrink:0;position:relative;z-index:10}
+#header::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;animation:police-bar 2s linear infinite}
+@keyframes police-bar{0%,100%{background:linear-gradient(90deg,var(--red) 0%,transparent 35%,transparent 65%,var(--blue) 100%)}50%{background:linear-gradient(90deg,var(--blue) 0%,transparent 35%,transparent 65%,var(--red) 100%)}}
+.h-brand{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.h-badge{font-size:26px;animation:badge-glow 3s ease-in-out infinite}
+@keyframes badge-glow{0%,100%{filter:drop-shadow(0 0 6px #d97706)}50%{filter:drop-shadow(0 0 16px #fcd34d)}}
+.h-title{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:2px;line-height:1.2}
+.h-title span{display:block;font-size:8px;font-weight:400;color:var(--t3);letter-spacing:3px}
+.h-stats{display:flex;gap:5px;flex:1;justify-content:center}
+.hstat{display:flex;flex-direction:column;align-items:center;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:3px 10px;min-width:95px}
+.hstat-lbl{font-size:8px;letter-spacing:2px;color:var(--t3);text-transform:uppercase;font-family:'Share Tech Mono',monospace}
+.hstat-val{font-family:'Orbitron',monospace;font-size:13px;font-weight:700}
+.hstat-val.money{color:var(--gold-l)}.hstat-val.time{color:var(--cyan-l)}.hstat-val.rep{color:var(--green-l)}
+.h-level{display:flex;flex-direction:column;align-items:center;background:linear-gradient(135deg,var(--purple),var(--blue-d));border-radius:7px;padding:4px 10px;border:1px solid rgba(124,58,237,.3);min-width:52px}
+.lvl-num{font-family:'Orbitron',monospace;font-size:15px;font-weight:900;line-height:1}
+.lvl-lbl{font-size:7px;letter-spacing:2px;color:rgba(255,255,255,.55);text-transform:uppercase}
+.h-xp{width:52px}
+.h-xpbar{height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:2px}
+.h-xpfill{height:100%;background:linear-gradient(90deg,var(--blue),var(--blue-l));border-radius:2px;transition:width .5s ease}
+.h-alerts{display:flex;gap:7px;align-items:center;flex-shrink:0}
+#alert-badge{background:var(--red);color:#fff;border-radius:20px;padding:4px 12px;font-size:10px;font-weight:700;font-family:'Orbitron',monospace;letter-spacing:1px;cursor:pointer;transition:all .3s;white-space:nowrap}
+#alert-badge.urgent{animation:flash-alert .7s ease-in-out infinite}
+@keyframes flash-alert{0%,100%{background:var(--red);box-shadow:none}50%{background:#ff1a1a;box-shadow:0 0 18px rgba(220,38,38,.8)}}
+.btn-hdr{background:transparent;border:1px solid var(--bg3);color:var(--t3);border-radius:5px;padding:5px 9px;cursor:pointer;font-size:10px;font-family:'Share Tech Mono',monospace;transition:all .2s}
+.btn-hdr:hover{border-color:var(--blue);color:var(--blue-l)}
+
+/* ── LAYOUT ── */
+#layout{display:flex;flex:1;overflow:hidden}
+
+/* ── SIDEBAR ── */
+#sidebar{width:190px;background:var(--bg1);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;padding:6px 0;overflow-y:auto}
+.nav-sect{padding:5px 12px 2px;font-size:8px;letter-spacing:3px;color:var(--t3);text-transform:uppercase;font-family:'Share Tech Mono',monospace;margin-top:6px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 14px;cursor:pointer;transition:all .15s;border-left:3px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.04)}
+.nav-item.active{background:rgba(59,130,246,.08);border-left-color:var(--blue)}
+.nav-item.active .nav-lbl{color:var(--blue-l)}
+.nav-icon{font-size:17px;width:20px;text-align:center}
+.nav-lbl{font-size:13px;font-weight:600;letter-spacing:.5px;color:var(--t2)}
+.nav-bdg{margin-left:auto;background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:9px;font-weight:700;font-family:'Share Tech Mono',monospace;animation:bdg-pulse 1s ease-in-out infinite}
+@keyframes bdg-pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.sb-stats{margin-top:auto;padding:10px 14px;border-top:1px solid var(--border)}
+.sb-stat{display:flex;justify-content:space-between;align-items:center;padding:2px 0}
+.sb-stat-lbl{font-size:10px;color:var(--t3)}
+.sb-stat-val{font-size:11px;font-family:'Share Tech Mono',monospace;color:var(--t2)}
+
+/* ── CONTENT ── */
+#content{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.tab-pane{display:none;height:100%;overflow-y:auto;padding:18px}
+.tab-pane.active{display:block}
+.page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.page-title{font-family:'Orbitron',monospace;font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase}
+.page-sub{font-size:11px;color:var(--t3);margin-top:2px;letter-spacing:1px}
+
+/* ── CARDS ── */
+.card{background:var(--bg1);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--border)}
+.card-title{font-family:'Orbitron',monospace;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--t2)}
+.card-body{padding:13px}
+
+/* ── STAT CARDS ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:10px;margin-bottom:18px}
+.stat-card{background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:12px 14px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:2px}
+.stat-card.blue::before{background:var(--blue)}.stat-card.red::before{background:var(--red)}
+.stat-card.gold::before{background:var(--gold)}.stat-card.green::before{background:var(--green)}
+.stat-card.purple::before{background:var(--purple)}.stat-card.cyan::before{background:var(--cyan)}
+.stat-icon{font-size:22px;margin-bottom:5px;display:block}
+.stat-val{font-family:'Orbitron',monospace;font-size:20px;font-weight:700;color:var(--t1);margin-bottom:2px}
+.stat-lbl{font-size:10px;color:var(--t3);letter-spacing:1px;text-transform:uppercase}
+
+/* ── CALLS ── */
+.calls-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px}
+.call-card{background:var(--bg1);border:1px solid var(--border);border-radius:8px;overflow:hidden;position:relative;transition:border-color .3s}
+.call-card.p1{border-color:rgba(220,38,38,.4)}.call-card.p2{border-color:rgba(217,119,6,.4)}.call-card.p3{border-color:rgba(5,150,105,.3)}
+.call-card.urgent{animation:urg-pulse 1s ease-in-out infinite}
+@keyframes urg-pulse{0%,100%{border-color:rgba(220,38,38,.4);box-shadow:none}50%{border-color:rgba(220,38,38,.9);box-shadow:0 0 14px rgba(220,38,38,.3)}}
+.call-hdr{display:flex;align-items:center;gap:8px;padding:9px 11px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--border)}
+.call-pri{font-size:9px;font-weight:700;font-family:'Share Tech Mono',monospace;padding:2px 7px;border-radius:3px;letter-spacing:1px}
+.p1 .call-pri{background:rgba(220,38,38,.2);color:var(--red-l);border:1px solid rgba(220,38,38,.3)}
+.p2 .call-pri{background:rgba(217,119,6,.2);color:var(--gold-l);border:1px solid rgba(217,119,6,.3)}
+.p3 .call-pri{background:rgba(5,150,105,.2);color:var(--green-l);border:1px solid rgba(5,150,105,.3)}
+.call-icon-big{font-size:19px}.call-name{font-size:13px;font-weight:700;flex:1}
+.call-timer{font-family:'Share Tech Mono',monospace;font-size:12px;font-weight:700;padding:2px 7px;border-radius:3px;background:var(--bg2);color:var(--t2)}
+.call-timer.hot{color:var(--red-l)}
+.call-bdy{padding:9px 11px}
+.call-loc{font-size:11px;color:var(--t3);margin-bottom:5px;font-family:'Share Tech Mono',monospace}
+.call-desc{font-size:12px;color:var(--t2);margin-bottom:7px}
+.call-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:7px}
+.call-tag{font-size:9px;padding:2px 7px;border-radius:3px;background:var(--bg2);color:var(--t3);border:1px solid var(--border);font-family:'Share Tech Mono',monospace}
+.call-pbar{height:3px;background:var(--bg2);border-radius:2px;margin-bottom:8px;overflow:hidden}
+.call-pfill{height:100%;border-radius:2px;transition:width 1s linear}
+
+/* ── RESPONDING ── */
+.resp-unit{display:flex;align-items:center;gap:7px;padding:6px 9px;background:rgba(59,130,246,.05);border:1px solid rgba(59,130,246,.15);border-radius:5px;margin-bottom:5px}
+.resp-bar{flex:1;height:4px;background:var(--bg2);border-radius:2px;overflow:hidden}
+.resp-fill{height:100%;border-radius:2px;transition:width 1s linear}
+.resp-lbl{font-size:9px;font-family:'Share Tech Mono',monospace;color:var(--t3);white-space:nowrap}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:7px 13px;border-radius:5px;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;transition:all .15s;white-space:nowrap}
+.btn:hover{opacity:.85;transform:translateY(-1px)}.btn:active{transform:translateY(0)}.btn:disabled{opacity:.3;cursor:not-allowed;transform:none}
+.btn-primary{background:var(--blue-d);color:#fff}.btn-danger{background:rgba(220,38,38,.8);color:#fff}
+.btn-gold{background:rgba(217,119,6,.8);color:#fff}.btn-green{background:rgba(5,150,105,.8);color:#fff}
+.btn-ghost{background:transparent;border:1px solid var(--bg3);color:var(--t2)}
+.btn-sm{padding:4px 9px;font-size:10px}.btn-xs{padding:3px 7px;font-size:9px}
+.w-full{width:100%}
+
+/* ── VEHICLE CARDS ── */
+.vehicle-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.veh-card{background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:12px;transition:border-color .2s}
+.veh-card:hover{border-color:var(--bg3)}
+.veh-card-hdr{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.veh-icon{font-size:28px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:var(--bg2);border-radius:7px;border:1px solid var(--border)}
+.veh-name{font-size:12px;font-weight:700;color:var(--t1)}.veh-type{font-size:9px;color:var(--t3);font-family:'Share Tech Mono',monospace;letter-spacing:1px}
+.veh-status{font-size:9px;padding:2px 7px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-weight:700}
+.s-avail{background:rgba(5,150,105,.15);color:var(--green-l);border:1px solid rgba(5,150,105,.2)}
+.s-disp{background:rgba(220,38,38,.15);color:var(--red-l);border:1px solid rgba(220,38,38,.2)}
+.s-ret{background:rgba(59,130,246,.15);color:var(--blue-l);border:1px solid rgba(59,130,246,.2)}
+.s-scene{background:rgba(217,119,6,.15);color:var(--gold-l);border:1px solid rgba(217,119,6,.2)}
+.veh-stats{display:flex;gap:7px;margin-bottom:7px}
+.veh-stat{flex:1;text-align:center;background:var(--bg2);border-radius:4px;padding:4px}
+.veh-stat-v{font-family:'Share Tech Mono',monospace;font-size:12px;font-weight:700;color:var(--t1)}
+.veh-stat-l{font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:1px}
+
+/* ── OFFICER CARDS ── */
+.off-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:9px}
+.off-card{background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:11px;transition:border-color .2s}
+.off-card:hover{border-color:var(--bg3)}
+.off-hdr{display:flex;align-items:center;gap:7px;margin-bottom:7px}
+.off-ava{width:36px;height:36px;border-radius:50%;background:var(--bg2);border:2px solid var(--bg3);display:flex;align-items:center;justify-content:center;font-size:18px}
+.off-name{font-size:12px;font-weight:700}.off-rank-bdg{font-size:8px;padding:1px 5px;border-radius:3px;font-family:'Share Tech Mono',monospace;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.off-xpbar{height:3px;background:var(--bg2);border-radius:2px;margin-top:7px;overflow:hidden}
+.off-xpfill{height:100%;background:linear-gradient(90deg,var(--blue),var(--blue-l));border-radius:2px;transition:width .5s}
+
+/* ── PRECINCT CARDS ── */
+.prec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.prec-card{background:var(--bg1);border:1px solid var(--border);border-radius:9px;overflow:hidden}
+.prec-hdr{padding:13px 15px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px}
+.prec-icon{font-size:28px;filter:drop-shadow(0 0 7px rgba(59,130,246,.4))}
+.prec-name{font-family:'Orbitron',monospace;font-size:12px;font-weight:700}.prec-tier{font-size:9px;color:var(--t3);letter-spacing:2px;text-transform:uppercase}
+.prec-bdy{padding:13px 15px}
+.cap-row{display:flex;gap:10px;margin-bottom:9px}
+.cap-item{flex:1}
+.cap-bar{height:5px;background:var(--bg2);border-radius:3px;margin-top:3px;overflow:hidden}
+.cap-fill-o{height:100%;background:var(--blue);border-radius:3px;transition:width .5s}
+.cap-fill-v{height:100%;background:var(--gold);border-radius:3px;transition:width .5s}
+.cap-lbl{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px}
+.cap-val{font-size:12px;font-weight:700;font-family:'Share Tech Mono',monospace}
+
+/* ── SKILL TREE ── */
+.skill-tree{display:flex;gap:12px;justify-content:flex-start;padding:4px 4px 12px;min-width:860px}
+.skill-branch{flex:1;display:flex;flex-direction:column;gap:8px;align-items:center;min-width:155px}
+.branch-title{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:2px;text-align:center;padding:5px 10px;border-radius:4px;text-transform:uppercase;width:100%}
+.skill-node{background:var(--bg1);border:2px solid var(--border);border-radius:9px;padding:11px;width:100%;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+.skill-node:not(.locked):not(.owned):hover{border-color:var(--blue);background:rgba(59,130,246,.06)}
+.skill-node.owned{border-color:var(--green);background:rgba(5,150,105,.07)}
+.skill-node.locked{opacity:.38;cursor:not-allowed}
+.skill-node.can-afford:not(.owned):not(.locked){box-shadow:0 0 0 1px rgba(59,130,246,.3)}
+.sk-icon{font-size:22px;margin-bottom:3px}.sk-name{font-size:11px;font-weight:700;color:var(--t1);margin-bottom:3px}
+.sk-desc{font-size:9px;color:var(--t3);line-height:1.3;margin-bottom:7px}
+.sk-cost{display:flex;justify-content:center;gap:7px}.sk-cost-item{font-size:9px;font-family:'Share Tech Mono',monospace}
+.sk-conn{width:2px;height:12px;margin:-3px auto;background:var(--border)}.sk-conn.on{background:var(--green)}
+
+/* ── DEPARTMENTS ── */
+.dept-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.dept-card{background:var(--bg1);border:1px solid var(--border);border-radius:9px;padding:16px;text-align:center;transition:all .2s;position:relative;overflow:hidden}
+.dept-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.dept-card.unlocked{border-color:rgba(5,150,105,.3)}.dept-card.unlocked::before{background:var(--green)}
+.dept-card.locked::before{background:var(--bg3)}
+.dept-icon-big{font-size:34px;margin-bottom:7px;display:block}
+.dept-name{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;margin-bottom:5px}
+.dept-desc{font-size:10px;color:var(--t3);margin-bottom:11px;line-height:1.4}
+.dept-cost{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--gold-l);margin-bottom:9px}
+
+/* ── SHOP ── */
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:10px}
+.shop-card{background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:13px;text-align:center;transition:all .2s;cursor:pointer;position:relative}
+.shop-card:hover:not(.locked){border-color:var(--blue);background:rgba(59,130,246,.05)}
+.shop-card.locked{opacity:.5;cursor:not-allowed}
+.shop-card-icon{font-size:32px;margin-bottom:7px}
+.shop-card-name{font-size:12px;font-weight:700;margin-bottom:3px}
+.shop-card-desc{font-size:9px;color:var(--t3);margin-bottom:7px;line-height:1.3}
+.shop-card-cost{font-family:'Orbitron',monospace;font-size:13px;color:var(--gold-l);margin-bottom:7px}
+.shop-locked-lbl{font-size:9px;color:var(--red-l)}
+
+/* ── LOG ── */
+#log-panel{height:108px;background:var(--bg0);border-top:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.log-hdr{display:flex;align-items:center;justify-content:space-between;padding:3px 13px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.01)}
+.log-title{font-size:8px;letter-spacing:2px;color:var(--t3);font-family:'Share Tech Mono',monospace;text-transform:uppercase}
+#log-list{flex:1;overflow-y:auto;padding:2px 0;display:flex;flex-direction:column}
+.log-entry{display:flex;align-items:center;gap:7px;padding:2px 13px;font-size:10px;color:var(--t3);font-family:'Share Tech Mono',monospace;animation:log-in .3s ease-out}
+@keyframes log-in{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+.log-time{color:var(--t3);flex-shrink:0;width:38px}.log-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}.log-msg{color:var(--t2)}
+
+/* ── MODAL ── */
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center}
+#modal-overlay.open{display:flex}
+.modal{background:var(--bg1);border:1px solid var(--bg3);border-radius:11px;width:90%;max-width:580px;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.modal-title{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;letter-spacing:2px}
+.modal-close{background:none;border:none;color:var(--t3);font-size:18px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:color .2s}
+.modal-close:hover{color:var(--t1);background:var(--bg2)}
+.modal-body{padding:18px;overflow-y:auto;flex:1}
+.modal-ftr{padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:9px;align-items:center}
+.disp-call-info{display:flex;align-items:flex-start;gap:12px;padding:11px;background:var(--bg2);border-radius:7px;margin-bottom:14px}
+.disp-unit-list{display:flex;flex-direction:column;gap:7px}
+.disp-unit{display:flex;align-items:center;gap:9px;padding:9px 11px;background:var(--bg2);border:2px solid var(--border);border-radius:7px;cursor:pointer;transition:all .15s}
+.disp-unit:hover{border-color:var(--blue)}.disp-unit.sel{border-color:var(--blue);background:rgba(59,130,246,.08)}
+.disp-unit.na{opacity:.35;cursor:not-allowed;border-color:var(--border)}
+.disp-chk{width:15px;height:15px;border-radius:3px;border:2px solid;display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0}
+
+/* ── TOASTS ── */
+#toast-container{position:fixed;top:64px;right:14px;z-index:2000;display:flex;flex-direction:column;gap:7px;pointer-events:none}
+.toast{background:var(--bg1);border:1px solid var(--bg3);border-radius:8px;padding:9px 14px;display:flex;align-items:center;gap:9px;font-size:12px;font-weight:600;min-width:240px;max-width:320px;animation:t-in .3s ease-out;box-shadow:0 4px 20px rgba(0,0,0,.35);pointer-events:all}
+@keyframes t-in{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:translateX(0)}}
+@keyframes t-out{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(28px)}}
+.toast-icon{font-size:16px}.toast-msg{flex:1}
+.toast.success{border-left:3px solid var(--green)}.toast.error{border-left:3px solid var(--red)}
+.toast.info{border-left:3px solid var(--blue)}.toast.warning{border-left:3px solid var(--gold)}
+.toast.levelup{border-left:3px solid var(--purple);background:rgba(124,58,237,.1)}
+
+/* ── REWARD FLASH ── */
+.reward-flash{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(5,150,105,.92);color:#fff;padding:13px 26px;border-radius:9px;font-family:'Orbitron',monospace;font-size:18px;font-weight:700;pointer-events:none;animation:r-pop 1.6s ease-out forwards;z-index:3000}
+@keyframes r-pop{0%{opacity:0;transform:translate(-50%,-50%) scale(.8)}20%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}70%{opacity:1;transform:translate(-50%,-75%)}100%{opacity:0;transform:translate(-50%,-120%)}}
+
+/* ── CONTENT TABS ── */
+.ctabs{display:flex;gap:3px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:0}
+.ctab{padding:6px 13px;font-size:11px;font-weight:600;color:var(--t3);cursor:pointer;border-radius:5px 5px 0 0;transition:all .15s;letter-spacing:1px;border-bottom:2px solid transparent;margin-bottom:-1px}
+.ctab:hover{color:var(--t2)}.ctab.active{color:var(--blue-l);border-bottom-color:var(--blue)}
+
+/* ── MISC ── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.empty-state{text-align:center;padding:35px 18px;color:var(--t3)}
+.empty-icon{font-size:36px;margin-bottom:10px;display:block}
+.empty-title{font-size:14px;font-weight:600;color:var(--t2);margin-bottom:5px}
+.empty-desc{font-size:11px}
+.sec-div{display:flex;align-items:center;gap:10px;margin:16px 0 12px}
+.sec-div-line{flex:1;height:1px;background:var(--border)}
+.sec-div-lbl{font-size:9px;letter-spacing:3px;color:var(--t3);font-family:'Share Tech Mono',monospace;text-transform:uppercase}
+.scroll-area{overflow-x:auto;padding-bottom:8px}
+select{background:var(--bg2);border:1px solid var(--bg3);color:var(--t1);padding:5px 9px;border-radius:5px;font-family:inherit;font-size:11px}
+select:focus{outline:none;border-color:var(--blue)}
+</style>
+</head>
+<body>
+
+<!-- ▓▓ HEADER ▓▓ -->
+<div id="header">
+  <div class="h-brand">
+    <span class="h-badge">🛡️</span>
+    <div class="h-title">POLICE COMMANDER<span>METROPOLITAN POLICE DEPT.</span></div>
+  </div>
+  <div class="h-stats">
+    <div class="hstat"><div class="hstat-lbl">Budget</div><div class="hstat-val money" id="h-money">$200,000</div></div>
+    <div class="hstat" style="min-width:75px"><div class="hstat-lbl">Day</div><div class="hstat-val time" id="h-day">Day 1</div></div>
+    <div class="hstat" style="min-width:75px"><div class="hstat-lbl">Time</div><div class="hstat-val time" id="h-time">08:00</div></div>
+    <div class="hstat" style="min-width:72px"><div class="hstat-lbl">Rep.</div><div class="hstat-val rep" id="h-rep">100%</div></div>
+    <div class="h-level"><div class="lvl-num" id="h-lvl">1</div><div class="lvl-lbl">Level</div></div>
+    <div class="h-xp">
+      <div style="font-size:8px;color:var(--t3);font-family:'Share Tech Mono',monospace;letter-spacing:1px">XP</div>
+      <div class="h-xpbar"><div class="h-xpfill" id="h-xpfill" style="width:0%"></div></div>
+      <div style="font-size:8px;color:var(--t3);font-family:'Share Tech Mono',monospace;margin-top:1px" id="h-xplbl">0/500</div>
+    </div>
+  </div>
+  <div class="h-alerts">
+    <div id="alert-badge">0 CALLS</div>
+    <button class="btn-hdr" onclick="G.save()">💾 SAVE</button>
+    <button class="btn-hdr" onclick="G.reset()" style="color:var(--red-l)">↺ RESET</button>
+  </div>
+</div>
+
+<!-- ▓▓ LAYOUT ▓▓ -->
+<div id="layout">
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="nav-sect">Operations</div>
+    <div class="nav-item active" onclick="G.ui.tab('dashboard')" id="nav-dashboard">
+      <span class="nav-icon">📊</span><span class="nav-lbl">Dashboard</span>
+    </div>
+    <div class="nav-item" onclick="G.ui.tab('dispatch')" id="nav-dispatch">
+      <span class="nav-icon">🚨</span><span class="nav-lbl">Dispatch</span>
+      <span class="nav-bdg" id="nav-bdg-dispatch" style="display:none">0</span>
+    </div>
+    <div class="nav-sect">Management</div>
+    <div class="nav-item" onclick="G.ui.tab('fleet')" id="nav-fleet">
+      <span class="nav-icon">🚗</span><span class="nav-lbl">Fleet</span>
+    </div>
+    <div class="nav-item" onclick="G.ui.tab('personnel')" id="nav-personnel">
+      <span class="nav-icon">👮</span><span class="nav-lbl">Personnel</span>
+    </div>
+    <div class="nav-item" onclick="G.ui.tab('precincts')" id="nav-precincts">
+      <span class="nav-icon">🏢</span><span class="nav-lbl">Precincts</span>
+    </div>
+    <div class="nav-sect">Development</div>
+    <div class="nav-item" onclick="G.ui.tab('skills')" id="nav-skills">
+      <span class="nav-icon">🌳</span><span class="nav-lbl">Skill Tree</span>
+    </div>
+    <div class="nav-item" onclick="G.ui.tab('departments')" id="nav-departments">
+      <span class="nav-icon">🏛️</span><span class="nav-lbl">Departments</span>
+    </div>
+    <div class="sb-stats">
+      <div class="sb-stat"><span class="sb-stat-lbl">Officers</span><span class="sb-stat-val" id="sb-off">2</span></div>
+      <div class="sb-stat"><span class="sb-stat-lbl">Vehicles</span><span class="sb-stat-val" id="sb-veh">1</span></div>
+      <div class="sb-stat"><span class="sb-stat-lbl">Calls Today</span><span class="sb-stat-val" id="sb-calls">0</span></div>
+      <div class="sb-stat"><span class="sb-stat-lbl">Precincts</span><span class="sb-stat-val" id="sb-prec">1</span></div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div id="content">
+
+    <!-- DASHBOARD -->
+    <div id="tab-dashboard" class="tab-pane active">
+      <div class="page-hdr">
+        <div><div class="page-title">📊 Command Dashboard</div><div class="page-sub">Real-time overview of department operations</div></div>
+      </div>
+      <div class="stat-grid" id="dash-stats"></div>
+      <div class="two-col">
+        <div>
+          <div class="card">
+            <div class="card-hdr"><span class="card-title">Active Incidents</span><span id="dash-cnt" style="font-size:10px;color:var(--t3)">0 incidents</span></div>
+            <div class="card-body" id="dash-calls"><div class="empty-state"><span class="empty-icon">✅</span><div class="empty-title">All Clear</div><div class="empty-desc">No active incidents</div></div></div>
+          </div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="card-hdr"><span class="card-title">Unit Status</span></div>
+            <div class="card-body" id="dash-units">Loading...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DISPATCH -->
+    <div id="tab-dispatch" class="tab-pane">
+      <div class="page-hdr">
+        <div><div class="page-title">🚨 Dispatch Center</div><div class="page-sub">Respond to active incidents across the city</div></div>
+      </div>
+      <div id="dispatch-content"></div>
+    </div>
+
+    <!-- FLEET -->
+    <div id="tab-fleet" class="tab-pane">
+      <div class="page-hdr">
+        <div><div class="page-title">🚗 Vehicle Fleet</div><div class="page-sub">Manage and expand your police vehicles</div></div>
+      </div>
+      <div class="ctabs">
+        <div class="ctab active" onclick="G.ui.fleetTab('inv')">Your Fleet</div>
+        <div class="ctab" onclick="G.ui.fleetTab('shop')">Buy Vehicles</div>
+      </div>
+      <div id="fleet-inv"></div>
+      <div id="fleet-shop" style="display:none"></div>
+    </div>
+
+    <!-- PERSONNEL -->
+    <div id="tab-personnel" class="tab-pane">
+      <div class="page-hdr">
+        <div><div class="page-title">👮 Personnel</div><div class="page-sub">Officers, ranks, and assignments</div></div>
+      </div>
+      <div class="ctabs">
+        <div class="ctab active" onclick="G.ui.personTab('roster')">Roster</div>
+        <div class="ctab" onclick="G.ui.personTab('hire')">Hire Officers</div>
+      </div>
+      <div id="person-roster"></div>
+      <div id="person-hire" style="display:none"></div>
+    </div>
+
+    <!-- PRECINCTS -->
+    <div id="tab-precincts" class="tab-pane">
+      <div class="page-hdr">
+        <div><div class="page-title">🏢 Precincts</div><div class="page-sub">Your police stations and facilities</div></div>
+      </div>
+      <div class="ctabs">
+        <div class="ctab active" onclick="G.ui.precTab('your')">Your Precincts</div>
+        <div class="ctab" onclick="G.ui.precTab('build')">Build New</div>
+      </div>
+      <div id="prec-your"></div>
+      <div id="prec-build" style="display:none"></div>
+    </div>
+
+    <!-- SKILLS -->
+    <div id="tab-skills" class="tab-pane">
+      <div class="page-hdr">
+        <div><div class="page-title">🌳 Skill Tree</div><div class="page-sub">Upgrade your department's capabilities</div></div>
+        <div style="text-align:right"><div style="font-size:9px;color:var(--t3);letter-spacing:2px;font-family:monospace">AVAILABLE XP</div><div style="font-family:'Orbitron',monospace;font-size:15px;font-weight:700;color:var(--blue-l)" id="skill-xp">0</div></div>
+      </div>
+      <div class="scroll-area"><div id="skill-tree"></div></div>
+    </div>
+
+    <!-- DEPARTMENTS -->
+    <div id="tab-departments" class="tab-pane">
+      <div class="page-hdr">
+        <div><div class="page-title">🏛️ Departments</div><div class="page-sub">Unlock specialized units and capabilities</div></div>
+      </div>
+      <div id="dept-content"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ▓▓ LOG ▓▓ -->
+<div id="log-panel">
+  <div class="log-hdr">
+    <span class="log-title">▶ Activity Log</span>
+    <span id="log-cnt" style="font-size:9px;color:var(--t3);font-family:monospace">0 events</span>
+  </div>
+  <div id="log-list"></div>
+</div>
+
+<!-- ▓▓ MODAL ▓▓ -->
+<div id="modal-overlay" onclick="G.ui.closeModal(event)">
+  <div class="modal" id="modal-box">
+    <div class="modal-hdr">
+      <span class="modal-title" id="modal-title">Modal</span>
+      <button class="modal-close" onclick="G.ui.closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-ftr" id="modal-ftr"></div>
+  </div>
+</div>
+
+<!-- ▓▓ TOASTS ▓▓ -->
+<div id="toast-container"></div>
+
+<script>
+const G = (() => {
+
+// ═══════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════
+const CALL_TYPES = [
+  {id:'traffic_stop',name:'Traffic Stop',pri:3,icon:'🚗',desc:'Routine traffic violation',minU:1,maxU:1,
+    reward:[500,1500],xp:[10,25],timeout:300,dur:[25,55]},
+  {id:'domestic',name:'Domestic Disturbance',pri:2,icon:'🏠',desc:'Reported domestic altercation',minU:1,maxU:2,
+    reward:[1000,3000],xp:[20,45],timeout:240,dur:[55,110]},
+  {id:'burglary',name:'Burglary in Progress',pri:2,icon:'🏚️',desc:'Break-in reported in progress',minU:2,maxU:3,
+    reward:[2000,5000],xp:[40,80],timeout:210,dur:[80,160]},
+  {id:'assault',name:'Assault in Progress',pri:2,icon:'⚠️',desc:'Physical assault reported',minU:1,maxU:2,
+    reward:[1500,4000],xp:[30,60],timeout:220,dur:[55,140]},
+  {id:'robbery',name:'Armed Robbery',pri:1,icon:'🔫',desc:'Armed robbery in progress',minU:2,maxU:4,
+    reward:[5000,12000],xp:[80,160],timeout:170,dur:[110,220]},
+  {id:'pursuit',name:'Vehicle Pursuit',pri:1,icon:'🏎️',desc:'High-speed vehicle pursuit underway',minU:2,maxU:4,
+    reward:[3000,8000],xp:[60,120],timeout:155,dur:[80,180]},
+  {id:'drug_bust',name:'Drug Operation',pri:2,icon:'💊',desc:'Suspected large-scale drug operation',minU:3,maxU:6,
+    reward:[10000,25000],xp:[120,250],timeout:320,dur:[180,380]},
+  {id:'bank_robbery',name:'Bank Robbery',pri:1,icon:'🏦',desc:'Active bank robbery — multiple suspects',minU:4,maxU:8,
+    reward:[25000,60000],xp:[300,600],timeout:260,dur:[280,560]},
+  {id:'hostage',name:'Hostage Situation',pri:1,icon:'🔴',desc:'Hostage situation — tactical units recommended',minU:5,maxU:10,
+    reward:[40000,100000],xp:[500,1000],timeout:500,dur:[380,760],reqDept:'swat'},
+  {id:'shooting',name:'Active Shooter',pri:1,icon:'🚨',desc:'Active shooter — immediate response required',minU:4,maxU:8,
+    reward:[30000,70000],xp:[400,800],timeout:210,dur:[220,440]},
+  {id:'gang_fight',name:'Gang Confrontation',pri:1,icon:'🎭',desc:'Large-scale gang confrontation',minU:3,maxU:6,
+    reward:[8000,22000],xp:[150,300],timeout:290,dur:[170,340]},
+  {id:'missing',name:'Missing Person',pri:3,icon:'🔍',desc:'Missing person — last seen downtown',minU:1,maxU:2,
+    reward:[800,2200],xp:[15,35],timeout:500,dur:[110,280]},
+];
+
+const LOCS = [
+  'Downtown Core','Harbor Front','East Side','West End','Industrial District',
+  'Northgate','Riverside Park','Central Market','Airport Road','Financial District',
+  'Old Town','University Campus','Southland','Highway 7 Corridor','Midtown'
+];
+
+const VEH_TYPES = {
+  cruiser:     {name:'Patrol Cruiser',     desc:'Ford Crown Victoria patrol unit',        cost:25000, cap:2, spd:1.0, icon:'🚓', dept:null},
+  charger:     {name:'Dodge Charger',      desc:'High-performance pursuit vehicle',        cost:48000, cap:2, spd:1.45,icon:'🏎️', dept:null},
+  suv:         {name:'Police SUV',         desc:'Ford Explorer — versatile patrol unit',  cost:57000, cap:4, spd:1.1, icon:'🚙', dept:null},
+  motorcycle:  {name:'Police Motorcycle',  desc:'BMW pursuit motorcycle — solo unit',     cost:21000, cap:1, spd:1.75,icon:'🏍️', dept:null},
+  k9_unit:     {name:'K9 Unit',            desc:'Specialized canine search & apprehension',cost:68000, cap:2, spd:1.0, icon:'🐕', dept:'k9'},
+  swat_van:    {name:'SWAT Van',           desc:'Lenco BearCat armored tactical carrier', cost:155000,cap:8, spd:0.8, icon:'🚐', dept:'swat'},
+  armored:     {name:'Armored Vehicle',    desc:'MRAP — maximum protection',              cost:310000,cap:6, spd:0.7, icon:'🛡️', dept:'swat'},
+  helicopter:  {name:'Police Helicopter',  desc:'Bell 407 — air support & surveillance',  cost:880000,cap:2, spd:3.6, icon:'🚁', dept:'air_support'},
+  unmarked:    {name:'Unmarked Detective', desc:'Undercover surveillance vehicle',         cost:41000, cap:2, spd:1.2, icon:'🕵️', dept:'detectives'},
+  command_unit:{name:'Mobile Command',     desc:'Field command center for major ops',      cost:215000,cap:6, spd:0.6, icon:'📡', dept:null},
+};
+
+const RANKS = [
+  {id:'cadet',    name:'Cadet',      salary:3500, hire:8000,  icon:'👮', col:'#94a3b8', xpReq:0},
+  {id:'officer',  name:'Officer',    salary:5500, hire:12000, icon:'👮', col:'#60a5fa', xpReq:100},
+  {id:'detective',name:'Detective',  salary:8500, hire:25000, icon:'🕵️', col:'#a78bfa', xpReq:500},
+  {id:'sergeant', name:'Sergeant',   salary:11000,hire:40000, icon:'⭐', col:'#34d399', xpReq:1500},
+  {id:'lieutenant',name:'Lieutenant',salary:14000,hire:65000, icon:'🌟', col:'#fbbf24', xpReq:5000},
+  {id:'captain',  name:'Captain',    salary:18000,hire:100000,icon:'🎖️', col:'#f97316', xpReq:15000},
+];
+
+const PREC_TYPES = [
+  {id:'small', name:'Small Precinct',   desc:'Local patrol station', icon:'🏢', cost:200000, maxOff:10, maxVeh:5,  upkeep:5000},
+  {id:'medium',name:'Medium Precinct',  desc:'District headquarters', icon:'🏛️',cost:500000, maxOff:25, maxVeh:15, upkeep:12000},
+  {id:'large', name:'Large Precinct',   desc:'Division command',     icon:'🏗️', cost:1200000,maxOff:50, maxVeh:30, upkeep:25000},
+  {id:'hq',    name:'Department HQ',    desc:'Main headquarters',    icon:'🏰', cost:3000000,maxOff:100,maxVeh:60, upkeep:50000},
+];
+
+const DEPTS = [
+  {id:'patrol',       name:'Patrol Division',    icon:'🚓', desc:'Standard patrol operations',                        cost:0,      unlocked:true},
+  {id:'traffic',      name:'Traffic Division',   icon:'🚦', desc:'Traffic enforcement and accident response',         cost:75000},
+  {id:'detectives',   name:'Detective Bureau',   icon:'🕵️', desc:'Criminal investigations and undercover operations', cost:150000},
+  {id:'k9',           name:'K9 Unit',            icon:'🐕', desc:'Canine search, tracking and apprehension teams',    cost:100000},
+  {id:'swat',         name:'SWAT Team',          icon:'⚡', desc:'Special weapons and tactics for high-risk ops',     cost:350000},
+  {id:'narcotics',    name:'Narcotics Unit',     icon:'💊', desc:'Drug enforcement investigations',                   cost:200000},
+  {id:'air_support',  name:'Air Support',        icon:'🚁', desc:'Helicopter surveillance and pursuit',               cost:600000},
+  {id:'gang_task_force',name:'Gang Task Force',  icon:'🎯', desc:'Specialized gang crime intelligence unit',          cost:250000},
+];
+
+const SKILLS = [
+  // Branch: response
+  {id:'faster_dispatch',  br:'response',tier:1,name:'Rapid Dispatch',   icon:'⚡',desc:'-20% unit response time',             cost:30000, xpCost:200,  req:[],                   eff:{respBonus:-0.20}},
+  {id:'motor_pool',       br:'response',tier:2,name:'Motor Pool',        icon:'🔧',desc:'-15% response time (stacks)',         cost:60000, xpCost:500,  req:['faster_dispatch'],  eff:{respBonus:-0.15}},
+  {id:'pursuit_training', br:'response',tier:3,name:'Pursuit Training',  icon:'🏎️',desc:'Vehicle pursuits finish 35% faster', cost:120000,xpCost:1000, req:['motor_pool'],        eff:{durBonus:-0.35}},
+  {id:'elite_response',   br:'response',tier:4,name:'Elite Response',    icon:'🚀',desc:'All units respond 30% faster',       cost:250000,xpCost:3000, req:['pursuit_training'],  eff:{respBonus:-0.30}},
+  // Branch: intel
+  {id:'enhanced_brief',   br:'intel',   tier:1,name:'Enhanced Briefing', icon:'📋',desc:'See call difficulty before dispatch', cost:25000, xpCost:150,  req:[],                   eff:{showDiff:true}},
+  {id:'surv_network',     br:'intel',   tier:2,name:'Surveillance Net',  icon:'📹',desc:'+25% XP from all calls',              cost:80000, xpCost:600,  req:['enhanced_brief'],   eff:{xpBonus:0.25}},
+  {id:'informant_net',    br:'intel',   tier:3,name:'Informant Network', icon:'🕵️',desc:'+20% time on all call timers',        cost:150000,xpCost:1200, req:['surv_network'],      eff:{timeBonus:0.20}},
+  {id:'cyber_div',        br:'intel',   tier:4,name:'Cyber Division',    icon:'💻',desc:'+$50k bonus on all major calls',      cost:300000,xpCost:2500, req:['informant_net'],     eff:{cyberBonus:50000}},
+  // Branch: manpower
+  {id:'recruit_drive',    br:'manpower',tier:1,name:'Recruitment Drive', icon:'📢',desc:'-15% officer hire cost',               cost:20000, xpCost:100,  req:[],                   eff:{hireDisc:0.15}},
+  {id:'academy',          br:'manpower',tier:2,name:'Training Academy',  icon:'🎓',desc:'Officers gain XP 50% faster',          cost:75000, xpCost:500,  req:['recruit_drive'],    eff:{offXpBonus:0.50}},
+  {id:'elite_program',    br:'manpower',tier:3,name:'Elite Program',     icon:'🌟',desc:'Unlock Lt. and Captain ranks',          cost:200000,xpCost:1500, req:['academy'],           eff:{hiRanks:true}},
+  {id:'command_staff',    br:'manpower',tier:4,name:'Command Staff',     icon:'🎖️',desc:'+2% rewards per officer on force',     cost:400000,xpCost:4000, req:['elite_program'],     eff:{staffBonus:true}},
+  // Branch: tech
+  {id:'dash_cams',        br:'tech',    tier:1,name:'Dash Cameras',      icon:'📷',desc:'+20% reward on traffic calls',         cost:30000, xpCost:200,  req:[],                   eff:{trafficBonus:0.20}},
+  {id:'body_cams',        br:'tech',    tier:2,name:'Body Cameras',      icon:'🎥',desc:'50% less rep loss on failed calls',     cost:60000, xpCost:400,  req:['dash_cams'],         eff:{failReduce:0.50}},
+  {id:'drone_fleet',      br:'tech',    tier:3,name:'Drone Fleet',       icon:'🚁',desc:'-25% call handling duration',           cost:180000,xpCost:1500, req:['body_cams'],         eff:{durBonus:-0.25}},
+  {id:'ai_dispatch',      br:'tech',    tier:4,name:'AI Dispatch',       icon:'🤖',desc:'Auto-dispatch Priority 3 calls',        cost:350000,xpCost:3500, req:['drone_fleet'],       eff:{autoP3:true}},
+  // Branch: expand
+  {id:'prop_invest',      br:'expand',  tier:1,name:'Property Investment',icon:'🏗️',desc:'-15% precinct build cost',            cost:40000, xpCost:250,  req:[],                   eff:{precDisc:0.15}},
+  {id:'comm_rel',         br:'expand',  tier:2,name:'Community Relations',icon:'🤝',desc:'+10% all call rewards',                cost:80000, xpCost:600,  req:['prop_invest'],       eff:{rewBonus:0.10}},
+  {id:'inter_agency',     br:'expand',  tier:3,name:'Inter-Agency Coop.',icon:'🤜',desc:'Backup adds flat +$40k per major call', cost:200000,xpCost:1800, req:['comm_rel'],          eff:{agencyBonus:40000}},
+  {id:'special_ops',      br:'expand',  tier:4,name:'Special Operations', icon:'🎯',desc:'Unlock mega-operation bonus calls',     cost:500000,xpCost:5000, req:['inter_agency'],      eff:{megaOps:true}},
+];
+
+const OFF_NAMES = [
+  'James Wilson','Sarah Connor','Mike Johnson','Emma Davis','Carlos Rodriguez',
+  'Lisa Thompson','Robert Brown','Jennifer Martinez','William Taylor','Amanda Anderson',
+  'David Jackson','Michelle White','Daniel Harris','Stephanie Lewis','Christopher Clark',
+  'Nicole Walker','Matthew Hall','Ashley Young','Anthony Allen','Megan Wright',
+  'Donald Scott','Lauren Green','Steven Adams','Emily Baker','Paul Nelson',
+  'Brittany Carter','Mark Mitchell','Samantha Perez','Jason Lee','Vanessa Hall',
+];
+const OFF_EMO = ['👮','👮‍♀️','🕵️','🕵️‍♀️','👮‍♂️'];
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let S = {
+  money:200000, xp:0, level:1, rep:100,
+  day:1, gameTime:480, tick:0,
+  precincts:[{id:'prec_1',name:'Precinct 1',tier:'small',district:'Downtown Core',vehicleIds:['veh_1'],officerIds:['off_1','off_2']}],
+  officers:[
+    {id:'off_1',name:'James Wilson',rank:'officer',status:'available',vehicleId:'veh_1',xp:0,emo:'👮',precinctId:'prec_1'},
+    {id:'off_2',name:'Sarah Connor',rank:'officer',status:'available',vehicleId:'veh_1',xp:0,emo:'👮‍♀️',precinctId:'prec_1'},
+  ],
+  vehicles:[{id:'veh_1',name:'Unit 1',type:'cruiser',precinctId:'prec_1',officerIds:['off_1','off_2'],status:'available',callId:null,phase:null,phaseTick:0,travelTicks:0,sceneTicks:0,returnTicks:0}],
+  calls:[],callCtr:1,vehCtr:2,offCtr:3,precCtr:2,
+  depts:['patrol'],skills:[],
+  stats:{total:0,done:0,failed:0,earned:0,spent:0,today:0,todayEarned:0},
+  log:[],logCtr:1,
+};
+let _nextCall = 10;
+let _loop = null;
+
+// ═══════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════
+function $$(n){if(n<0)return '-'+$$(-n);if(n>=1e6)return '$'+(n/1e6).toFixed(1)+'M';if(n>=1000)return '$'+Math.floor(n/1000)+'k';return '$'+n.toLocaleString()}
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function fmtTime(m){const h=Math.floor(m/60)%24;const mm=m%60;return `${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')}`}
+function fmtCD(s){const m=Math.floor(s/60);return `${m}:${String(s%60).padStart(2,'0')}`}
+function hasSkill(id){return S.skills.includes(id)}
+function hasDept(id){return S.depts.includes(id)}
+function eff(key){let t=0;S.skills.forEach(id=>{const sk=SKILLS.find(s=>s.id===id);if(sk&&sk.eff[key]!==undefined)t+=sk.eff[key]});return t}
+function effBool(key){return S.skills.some(id=>{const sk=SKILLS.find(s=>s.id===id);return sk&&sk.eff[key]})}
+function availVehs(){return S.vehicles.filter(v=>v.status==='available')}
+function activeCalls(){return S.calls.filter(c=>c.status==='waiting'||c.status==='responding')}
+function xpForLevel(l){const t=[0,500,1500,3500,7000,13000,25000,50000,100000,200000];return t[Math.min(l-1,t.length-1)]||0}
+function xpForNext(l){const t=[0,500,1500,3500,7000,13000,25000,50000,100000,200000,Infinity];return t[Math.min(l,t.length-1)]}
+function calcLevel(xp){const t=[0,500,1500,3500,7000,13000,25000,50000,100000,200000];let l=1;for(let i=0;i<t.length;i++){if(xp>=t[i])l=i+1}return l}
+
+// ═══════════════════════════════════════════
+// AUDIO
+// ═══════════════════════════════════════════
+function beep(f,ms,vol){
+  try{
+    const c=new(window.AudioContext||window.webkitAudioContext)();
+    const o=c.createOscillator();const g=c.createGain();
+    o.connect(g);g.connect(c.destination);
+    o.frequency.value=f;g.gain.value=vol||0.07;
+    o.start();o.stop(c.currentTime+ms/1000);
+    g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+ms/1000);
+  }catch(e){}
+}
+
+// ═══════════════════════════════════════════
+// GAME LOGIC
+// ═══════════════════════════════════════════
+function spawnCall(){
+  let pool=CALL_TYPES.filter(ct=>!ct.reqDept||hasDept(ct.reqDept));
+  if(S.stats.total<3)pool=pool.filter(ct=>ct.pri>=2);
+  else if(S.level<3)pool=pool.filter(ct=>ct.pri>=2||Math.random()>.75);
+
+  const wts=pool.map(ct=>ct.pri===1?1.5:ct.pri===2?2.5:3.5);
+  const total=wts.reduce((a,b)=>a+b,0);
+  let r=Math.random()*total;let ct=pool[0];
+  for(let i=0;i<pool.length;i++){r-=wts[i];if(r<=0){ct=pool[i];break}}
+
+  const tBonus=eff('timeBonus');
+  const call={
+    id:'c'+(S.callCtr++),type:ct.id,name:ct.name,pri:ct.pri,icon:ct.icon,desc:ct.desc,
+    loc:pick(LOCS),minU:ct.minU,maxU:ct.maxU,
+    rewMin:ct.reward[0],rewMax:ct.reward[1],xpMin:ct.xp[0],xpMax:ct.xp[1],
+    durMin:ct.dur[0],durMax:ct.dur[1],
+    timeout:Math.floor(ct.timeout*(1+tBonus)),timeLeft:Math.floor(ct.timeout*(1+tBonus)),
+    status:'waiting',assignedVehs:[],
+  };
+  S.calls.push(call);
+  S.stats.total++;S.stats.today++;
+  log('📡',`New ${call.pri===1?'⚡P1':call.pri===2?'⚠️P2':'✅P3'} call: ${call.name} at ${call.loc}`,
+    call.pri===1?'#ef4444':call.pri===2?'#d97706':'#059669');
+  if(call.pri===1){ui.toast(`🚨 PRIORITY 1 — ${call.name}!`,'error');beep(880,200);beep(660,200);flashAlert()}
+  ui.refresh();
+  if(effBool('autoP3')&&call.pri===3){
+    setTimeout(()=>{
+      const c=S.calls.find(c=>c.id===call.id&&c.status==='waiting');
+      if(c){const av=availVehs();if(av.length>0){dispatch(call.id,[av[0].id]);ui.toast(`🤖 AI Dispatch → ${call.name}`,'info')}}
+    },1800);
+  }
+}
+
+function dispatch(callId,vehIds){
+  const call=S.calls.find(c=>c.id===callId);
+  if(!call||call.status!=='waiting')return false;
+  const vehs=vehIds.map(id=>S.vehicles.find(v=>v.id===id)).filter(Boolean);
+  if(!vehs.length)return false;
+  call.status='responding';call.assignedVehs=vehIds;
+  const avgSpd=vehs.reduce((s,v)=>{const vt=VEH_TYPES[v.type];return s+(vt?vt.spd:1)},0)/vehs.length;
+  const rb=eff('respBonus');const db=eff('durBonus');
+  const trvTicks=Math.max(5,Math.round((rnd(12,38)/avgSpd)*(1+rb)));
+  const scnTicks=Math.max(10,Math.round(rnd(call.durMin,call.durMax)*(1+db)/avgSpd));
+  const retTicks=Math.max(5,Math.round(rnd(8,22)/avgSpd));
+  vehs.forEach(v=>{
+    v.status='responding';v.callId=callId;v.phase='traveling';
+    v.travelTicks=trvTicks;v.sceneTicks=scnTicks;v.returnTicks=retTicks;v.phaseTick=0;
+    v.officerIds.forEach(oid=>{const o=S.officers.find(o=>o.id===oid);if(o)o.status='dispatched'});
+  });
+  log('🚓',`${vehs.map(v=>v.name).join(', ')} dispatched to ${call.name} at ${call.loc}`,'#3b82f6');
+  ui.refresh();return true;
+}
+
+function completeCall(callId){
+  const call=S.calls.find(c=>c.id===callId);
+  if(!call||call.status!=='responding')return;
+  let rew=rnd(call.rewMin,call.rewMax);
+  let xpEarned=rnd(call.xpMin,call.xpMax);
+  const xpB=eff('xpBonus');const rewB=eff('rewBonus');
+  const staffB=effBool('staffBonus')?(S.officers.length*0.02):0;
+  const traffB=(hasSkill('dash_cams')&&call.type==='traffic_stop')?0.20:0;
+  const cyberB=effBool('cyberBool')&&call.pri===1?eff('cyberBonus'):0;
+  const agencyB=effBool('agencyBonus')&&call.pri===1?eff('agencyBonus'):0;
+  xpEarned=Math.floor(xpEarned*(1+xpB));
+  rew=Math.floor(rew*(1+rewB+staffB+traffB)+cyberB+agencyB);
+  S.money+=rew;addXp(xpEarned,call.assignedVehs);
+  S.stats.done++;S.stats.earned+=rew;S.stats.todayEarned+=rew;
+  call.status='completed';
+  call.assignedVehs.forEach(vid=>{const v=S.vehicles.find(v=>v.id===vid);if(v){v.phase='returning';v.phaseTick=0}});
+  S.rep=Math.min(100,S.rep+(call.pri===1?rnd(2,5):call.pri===2?rnd(1,3):rnd(0,1)));
+  log('✅',`${call.name} resolved! +${$$(rew)}, +${xpEarned} XP`,'#10b981');
+  rewardFlash(`+${$$(rew)}`);
+  ui.toast(`✅ ${call.name} resolved! +${$$(rew)}`,'success');
+  beep(523,80);beep(659,80);beep(784,120);
+  ui.refresh();
+}
+
+function failCall(callId){
+  const call=S.calls.find(c=>c.id===callId);
+  if(!call||call.status!=='waiting')return;
+  call.status='failed';S.stats.failed++;
+  const loss=call.pri===1?rnd(8,15):call.pri===2?rnd(4,8):rnd(1,3);
+  const reduced=hasSkill('body_cams')?Math.floor(loss*0.5):loss;
+  S.rep=Math.max(0,S.rep-reduced);
+  log('❌',`${call.name} at ${call.loc} — no response! -${reduced}% reputation`,'#ef4444');
+  ui.toast(`❌ ${call.name} failed! -${reduced}% rep`,'error');
+  ui.refresh();
+}
+
+function addXp(amount,vehIds){
+  const old=S.level;S.xp+=amount;S.level=calcLevel(S.xp);
+  const offMult=1+eff('offXpBonus');
+  vehIds.forEach(vid=>{
+    const v=S.vehicles.find(v=>v.id===vid);if(!v)return;
+    v.officerIds.forEach(oid=>{
+      const o=S.officers.find(o=>o.id===oid);if(!o)return;
+      o.xp=(o.xp||0)+Math.floor(amount*offMult/v.officerIds.length);
+      promoteOfficer(o);
+    });
+  });
+  if(S.level>old){
+    ui.toast(`🎉 LEVEL UP! Now Level ${S.level}!`,'levelup');
+    log('🎉',`LEVEL UP! Reached Level ${S.level}`,'#8b5cf6');
+    rewardFlash(`LEVEL ${S.level}!`);
+    beep(523,100);beep(784,100);beep(1047,200);
+  }
+}
+
+function promoteOfficer(o){
+  const ri=RANKS.findIndex(r=>r.id===o.rank);if(ri<0)return;
+  const nr=RANKS[ri+1];if(!nr)return;
+  if((nr.id==='lieutenant'||nr.id==='captain')&&!effBool('hiRanks'))return;
+  if(o.xp>=nr.xpReq){o.rank=nr.id;log('⭐',`${o.name} promoted to ${nr.name}!`,'#fbbf24');ui.toast(`⭐ ${o.name} → ${nr.name}!`,'warning')}
+}
+
+function payroll(){
+  let sal=0;S.officers.forEach(o=>{const r=RANKS.find(r=>r.id===o.rank);if(r)sal+=Math.floor(r.salary/30)});
+  let up=0;S.precincts.forEach(p=>{const pt=PREC_TYPES.find(t=>t.id===p.tier);if(pt)up+=Math.floor(pt.upkeep/30)});
+  const tot=sal+up;if(tot>0){S.money=Math.max(0,S.money-tot);if(S.money<10000)ui.toast(`⚠️ Low budget: ${$$(S.money)}`,'warning')}
+}
+
+// ═══════════════════════════════════════════
+// TICK
+// ═══════════════════════════════════════════
+function tick(){
+  S.tick++;S.gameTime++;
+  if(S.gameTime>=1440){
+    S.gameTime=0;S.day++;S.stats.today=0;S.stats.todayEarned=0;
+    payroll();log('🌅',`Day ${S.day} begins`,'#60a5fa');
+    if(S.tick%600===0)save();
+  }
+  if(S.tick>=_nextCall){
+    const base=Math.max(18,55-S.level*3);
+    _nextCall=S.tick+rnd(base,base*2);
+    spawnCall();
+  }
+  S.calls.forEach(c=>{
+    if(c.status==='waiting'){c.timeLeft=Math.max(0,c.timeLeft-1);if(c.timeLeft===0)failCall(c.id)}
+  });
+  S.vehicles.forEach(v=>{
+    if(v.status!=='available'&&v.phase){
+      v.phaseTick++;
+      if(v.phase==='traveling'&&v.phaseTick>=v.travelTicks){
+        v.phase='on_scene';v.status='on_scene';v.phaseTick=0;
+        const c=S.calls.find(c=>c.id===v.callId);
+        if(c)log('📍',`${v.name} arrived on scene at ${c.loc}`,'#f59e0b');
+      } else if(v.phase==='on_scene'&&v.phaseTick>=v.sceneTicks){
+        const c=S.calls.find(c=>c.id===v.callId);
+        if(c&&c.status==='responding')completeCall(c.id);
+        v.phase='returning';v.phaseTick=0;
+      } else if(v.phase==='returning'&&v.phaseTick>=v.returnTicks){
+        v.status='available';v.callId=null;v.phase=null;v.phaseTick=0;
+        v.officerIds.forEach(oid=>{const o=S.officers.find(o=>o.id===oid);if(o)o.status='available'});
+        const prec=S.precincts.find(p=>p.id===v.precinctId);
+        log('🏠',`${v.name} returned to ${prec?.name||'precinct'}`,'#64748b');
+      }
+    }
+  });
+  // Cleanup old completed/failed calls
+  if(S.tick%120===0)S.calls=S.calls.filter(c=>c.status==='waiting'||c.status==='responding');
+  updateHeader();
+  const wait=S.calls.filter(c=>c.status==='waiting').length;
+  const bdg=document.getElementById('nav-bdg-dispatch');
+  if(bdg){bdg.textContent=wait;bdg.style.display=wait>0?'':'none'}
+  if(S.tick%4===0)ui.refreshCur();
+}
+
+function updateHeader(){
+  const el=id=>document.getElementById(id);
+  el('h-money').textContent=$$(S.money);
+  el('h-day').textContent=`Day ${S.day}`;
+  el('h-time').textContent=fmtTime(S.gameTime);
+  el('h-rep').textContent=`${Math.round(S.rep)}%`;
+  el('h-lvl').textContent=S.level;
+  const cur=xpForLevel(S.level),nxt=xpForNext(S.level),pct=nxt===Infinity?100:Math.round(((S.xp-cur)/(nxt-cur))*100);
+  el('h-xpfill').style.width=pct+'%';
+  el('h-xplbl').textContent=`${S.xp.toLocaleString()}/${nxt===Infinity?'MAX':nxt.toLocaleString()}`;
+  el('alert-badge').textContent=`${activeCalls().length} CALL${activeCalls().length!==1?'S':''}`;
+  el('sb-off').textContent=S.officers.length;
+  el('sb-veh').textContent=S.vehicles.length;
+  el('sb-calls').textContent=S.stats.today;
+  el('sb-prec').textContent=S.precincts.length;
+  const skXp=document.getElementById('skill-xp');if(skXp)skXp.textContent=S.xp.toLocaleString();
+}
+
+function flashAlert(){
+  const el=document.getElementById('alert-badge');
+  if(el){el.classList.add('urgent');setTimeout(()=>el.classList.remove('urgent'),5000)}
+}
+
+function rewardFlash(txt){
+  const el=document.createElement('div');el.className='reward-flash';el.textContent=txt;
+  document.body.appendChild(el);setTimeout(()=>el.remove(),1700);
+}
+
+function log(icon,msg,col){
+  const entry={id:S.logCtr++,icon,msg,col:col||'#94a3b8',time:fmtTime(S.gameTime)};
+  S.log.unshift(entry);if(S.log.length>80)S.log.pop();
+  const ll=document.getElementById('log-list');
+  if(ll){
+    const el=document.createElement('div');el.className='log-entry';
+    el.innerHTML=`<span class="log-time">${entry.time}</span><span class="log-dot" style="background:${entry.col}"></span><span class="log-msg">${entry.msg}</span>`;
+    ll.insertBefore(el,ll.firstChild);if(ll.children.length>40)ll.removeChild(ll.lastChild);
+    document.getElementById('log-cnt').textContent=`${Math.min(S.log.length,40)} events`;
+  }
+}
+
+// ═══════════════════════════════════════════
+// PURCHASES
+// ═══════════════════════════════════════════
+function buyVeh(typeId,precId){
+  const vt=VEH_TYPES[typeId];if(!vt)return;
+  if(vt.dept&&!hasDept(vt.dept)){ui.toast(`⛔ Requires ${DEPTS.find(d=>d.id===vt.dept)?.name||vt.dept}`,'error');return}
+  if(S.money<vt.cost){ui.toast(`⛔ Need ${$$(vt.cost)} — only ${$$(S.money)}`,'error');return}
+  const prec=S.precincts.find(p=>p.id===precId);if(!prec)return;
+  const pt=PREC_TYPES.find(t=>t.id===prec.tier);
+  if(prec.vehicleIds.length>=(pt?.maxVeh||5)){ui.toast('⛔ Precinct vehicle capacity full','error');return}
+  S.money-=vt.cost;S.stats.spent+=vt.cost;
+  const id='v'+(S.vehCtr++);
+  S.vehicles.push({id,name:`Unit ${S.vehicles.length+1}`,type:typeId,precinctId:precId,officerIds:[],status:'available',callId:null,phase:null,phaseTick:0,travelTicks:0,sceneTicks:0,returnTicks:0});
+  prec.vehicleIds.push(id);
+  log('🚗',`Purchased ${vt.name} for ${$$(vt.cost)}`,'#f59e0b');ui.toast(`✅ ${vt.name} added!`,'success');ui.refresh();
+}
+
+function hireOfficer(rankId,precId){
+  const rk=RANKS.find(r=>r.id===rankId);if(!rk)return;
+  if((rankId==='lieutenant'||rankId==='captain')&&!effBool('hiRanks')){ui.toast('⛔ Requires Elite Program skill','error');return}
+  const disc=eff('hireDisc');const cost=Math.floor(rk.hire*(1-disc));
+  if(S.money<cost){ui.toast(`⛔ Need ${$$(cost)}`,'error');return}
+  const prec=S.precincts.find(p=>p.id===precId);if(!prec)return;
+  const pt=PREC_TYPES.find(t=>t.id===prec.tier);
+  if(prec.officerIds.length>=(pt?.maxOff||10)){ui.toast('⛔ Precinct officer capacity full','error');return}
+  S.money-=cost;S.stats.spent+=cost;
+  const id='o'+(S.offCtr++);
+  const usedNames=S.officers.map(o=>o.name);
+  const nm=pick(OFF_NAMES.filter(n=>!usedNames.includes(n)))||`Officer ${S.offCtr}`;
+  S.officers.push({id,name:nm,rank:rankId,status:'available',vehicleId:null,xp:rk.xpReq,emo:pick(OFF_EMO),precinctId:precId});
+  prec.officerIds.push(id);
+  log('👮',`Hired ${nm} as ${rk.name} for ${$$(cost)}`,'#60a5fa');ui.toast(`✅ ${nm} joined the force!`,'success');ui.refresh();
+}
+
+function buildPrec(tierIdx){
+  const pt=PREC_TYPES[tierIdx];if(!pt)return;
+  const disc=eff('precDisc');const cost=Math.floor(pt.cost*(1-disc));
+  if(S.money<cost){ui.toast(`⛔ Need ${$$(cost)}`,'error');return}
+  S.money-=cost;S.stats.spent+=cost;
+  const id='p'+(S.precCtr++);
+  const usedDist=S.precincts.map(p=>p.district);
+  const dist=pick(LOCS.filter(l=>!usedDist.includes(l)))||pick(LOCS);
+  S.precincts.push({id,name:`Precinct ${S.precincts.length+1}`,tier:pt.id,district:dist,vehicleIds:[],officerIds:[]});
+  log('🏢',`Built ${pt.name} for ${$$(cost)}`,'#7c3aed');ui.toast(`✅ ${pt.name} constructed!`,'success');ui.refresh();
+}
+
+function unlockDept(id){
+  const d=DEPTS.find(d=>d.id===id);if(!d||hasDept(id))return;
+  if(S.money<d.cost){ui.toast(`⛔ Need ${$$(d.cost)}`,'error');return}
+  S.money-=d.cost;S.stats.spent+=d.cost;S.depts.push(id);
+  log('🏛️',`Unlocked ${d.name} for ${$$(d.cost)}`,'#8b5cf6');ui.toast(`✅ ${d.name} unlocked!`,'success');ui.refresh();
+}
+
+function unlockSkill(id){
+  const sk=SKILLS.find(s=>s.id===id);if(!sk||hasSkill(id))return;
+  if(!sk.req.every(r=>hasSkill(r))){ui.toast('⛔ Unlock prerequisites first','error');return}
+  if(S.money<sk.cost){ui.toast(`⛔ Need ${$$(sk.cost)}`,'error');return}
+  if(S.xp<sk.xpCost){ui.toast(`⛔ Need ${sk.xpCost.toLocaleString()} XP`,'error');return}
+  S.money-=sk.cost;S.xp-=sk.xpCost;S.stats.spent+=sk.cost;S.skills.push(id);
+  log('🌟',`Unlocked skill: ${sk.name}`,'#f59e0b');ui.toast(`🌟 Skill: ${sk.name} unlocked!`,'warning');
+  ui.refreshCur();updateHeader();
+}
+
+// ═══════════════════════════════════════════
+// SAVE / LOAD / RESET
+// ═══════════════════════════════════════════
+function save(){
+  try{localStorage.setItem('pcc_v2',JSON.stringify(S));ui.toast('💾 Saved','info')}
+  catch(e){ui.toast('❌ Save failed','error')}
+}
+function load(){
+  try{
+    const d=localStorage.getItem('pcc_v2');
+    if(d){Object.assign(S,JSON.parse(d));_nextCall=S.tick+10;
+      S.calls=S.calls.filter(c=>c.status==='waiting'||c.status==='responding');
+      S.vehicles.forEach(v=>{if(v.status!=='available'){const c=S.calls.find(c=>c.id===v.callId);if(!c){v.status='available';v.callId=null;v.phase=null}}});
+      S.officers.forEach(o=>{if(o.status==='dispatched'){const v=S.vehicles.find(v=>v.officerIds.includes(o.id));if(!v||v.status==='available')o.status='available'}});
+      return true}
+  }catch(e){}return false;
+}
+function reset(){if(confirm('Reset all progress? Cannot be undone.')){localStorage.removeItem('pcc_v2');location.reload()}}
+
+// ═══════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════
+const ui = {
+  curTab:'dashboard', flTab:'inv', perTab:'roster', precTabKey:'your',
+  dispSel:{},
+
+  tab(t){
+    this.curTab=t;
+    document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+    const pane=document.getElementById(`tab-${t}`);if(pane)pane.classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.id===`nav-${t}`));
+    this.refreshCur();
+  },
+
+  fleetTab(t){
+    this.flTab=t;
+    document.querySelectorAll('#tab-fleet .ctab').forEach((el,i)=>el.classList.toggle('active',(i===0&&t==='inv')||(i===1&&t==='shop')));
+    document.getElementById('fleet-inv').style.display=t==='inv'?'':'none';
+    document.getElementById('fleet-shop').style.display=t==='shop'?'':'none';
+    this.renderFleet();
+  },
+
+  personTab(t){
+    this.perTab=t;
+    document.querySelectorAll('#tab-personnel .ctab').forEach((el,i)=>el.classList.toggle('active',(i===0&&t==='roster')||(i===1&&t==='hire')));
+    document.getElementById('person-roster').style.display=t==='roster'?'':'none';
+    document.getElementById('person-hire').style.display=t==='hire'?'':'none';
+    this.renderPersonnel();
+  },
+
+  precTab(t){
+    this.precTabKey=t;
+    document.querySelectorAll('#tab-precincts .ctab').forEach((el,i)=>el.classList.toggle('active',(i===0&&t==='your')||(i===1&&t==='build')));
+    document.getElementById('prec-your').style.display=t==='your'?'':'none';
+    document.getElementById('prec-build').style.display=t==='build'?'':'none';
+    this.renderPrecincts();
+  },
+
+  refresh(){this.refreshCur()},
+
+  refreshCur(){
+    switch(this.curTab){
+      case 'dashboard':  this.renderDash();    break;
+      case 'dispatch':   this.renderDispatch(); break;
+      case 'fleet':      this.renderFleet();    break;
+      case 'personnel':  this.renderPersonnel();break;
+      case 'precincts':  this.renderPrecincts();break;
+      case 'skills':     this.renderSkills();   break;
+      case 'departments':this.renderDepts();    break;
+    }
+  },
+
+  // ── DASHBOARD ──
+  renderDash(){
+    const stats=[
+      {icon:'💰',val:$$(S.money),lbl:'Budget',cls:'gold'},
+      {icon:'🚨',val:activeCalls().length,lbl:'Active Calls',cls:'red'},
+      {icon:'👮',val:S.officers.length,lbl:'Officers',cls:'blue'},
+      {icon:'🚗',val:S.vehicles.length,lbl:'Fleet Size',cls:'cyan'},
+      {icon:'✅',val:S.stats.done,lbl:'Calls Completed',cls:'green'},
+      {icon:'🏢',val:S.precincts.length,lbl:'Precincts',cls:'purple'},
+      {icon:'⭐',val:Math.round(S.rep)+'%',lbl:'Reputation',cls:'gold'},
+      {icon:'📈',val:$$(S.stats.todayEarned),lbl:'Earned Today',cls:'green'},
+    ];
+    document.getElementById('dash-stats').innerHTML=stats.map(s=>`
+      <div class="stat-card ${s.cls}"><span class="stat-icon">${s.icon}</span><div class="stat-val">${s.val}</div><div class="stat-lbl">${s.lbl}</div></div>
+    `).join('');
+    const ac=activeCalls().slice(0,6);
+    document.getElementById('dash-cnt').textContent=`${ac.length} incident${ac.length!==1?'s':''}`;
+    document.getElementById('dash-calls').innerHTML=ac.length===0?`<div class="empty-state"><span class="empty-icon">✅</span><div class="empty-title">All Clear</div><div class="empty-desc">No active incidents</div></div>`:
+      ac.map(c=>{
+        const pc=c.pri===1?'p1':c.pri===2?'p2':'p3';
+        const hot=c.status==='waiting'&&c.timeLeft<60;
+        return `<div style="display:flex;align-items:center;gap:7px;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:17px">${c.icon}</span>
+          <div style="flex:1"><div style="font-size:12px;font-weight:700">${c.name}</div><div style="font-size:9px;color:var(--t3);font-family:monospace">${c.loc}</div></div>
+          <span class="call-pri ${pc}">${c.pri===1?'P1':c.pri===2?'P2':'P3'}</span>
+          ${c.status==='waiting'?`<span style="font-size:10px;color:${hot?'var(--red-l)':'var(--t3)'};font-family:monospace">${fmtCD(c.timeLeft)}</span>`:`<span style="font-size:9px;color:var(--gold-l);font-family:monospace;text-transform:uppercase">${c.status}</span>`}
+        </div>`
+      }).join('');
+    document.getElementById('dash-units').innerHTML=S.vehicles.length===0?`<div style="color:var(--t3);font-size:12px">No vehicles yet</div>`:
+      S.vehicles.slice(0,8).map(v=>{
+        const vt=VEH_TYPES[v.type];
+        const sc=v.status==='available'?'s-avail':v.status==='returning'?'s-ret':v.status==='on_scene'?'s-scene':'s-disp';
+        return `<div style="display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:18px">${vt?.icon||'🚗'}</span>
+          <div style="flex:1"><div style="font-size:11px;font-weight:700">${v.name}</div><div style="font-size:9px;color:var(--t3)">${vt?.name||v.type}</div></div>
+          <span class="veh-status ${sc}">${v.status.replace('_',' ').toUpperCase()}</span>
+        </div>`
+      }).join('')+(S.vehicles.length>8?`<div style="padding:5px 0;font-size:10px;color:var(--t3);text-align:center">+${S.vehicles.length-8} more</div>`:'');
+  },
+
+  // ── DISPATCH ──
+  renderDispatch(){
+    const wait=S.calls.filter(c=>c.status==='waiting');
+    const resp=S.calls.filter(c=>c.status==='responding');
+    if(!wait.length&&!resp.length){
+      document.getElementById('dispatch-content').innerHTML=`<div class="empty-state"><span class="empty-icon">📡</span><div class="empty-title">No Active Calls</div><div class="empty-desc">Monitoring all frequencies...</div></div>`;
+      return;
+    }
+    let html='';
+    if(wait.length){
+      html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;text-transform:uppercase">Awaiting Response (${wait.length})</div>
+        <div style="font-size:10px;color:var(--t3)">Click DISPATCH to send units</div>
+      </div><div class="calls-grid" style="margin-bottom:16px">`;
+      html+=wait.sort((a,b)=>a.pri-b.pri||a.timeLeft-b.timeLeft).map(c=>this.callCard(c)).join('');
+      html+='</div>';
+    }
+    if(resp.length){
+      html+=`<div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;text-transform:uppercase;margin-bottom:10px">Units Responding (${resp.length})</div>
+      <div class="calls-grid">`;
+      html+=resp.map(c=>this.respCard(c)).join('');
+      html+='</div>';
+    }
+    document.getElementById('dispatch-content').innerHTML=html;
+  },
+
+  callCard(c){
+    const pc=c.pri===1?'p1':c.pri===2?'p2':'p3';
+    const hot=c.timeLeft<60;
+    const pct=Math.max(0,(c.timeLeft/c.timeout)*100);
+    const bc=pct>50?'#10b981':pct>20?'#d97706':'#ef4444';
+    const av=availVehs().length;
+    return `<div class="call-card ${pc}${hot?' urgent':''}">
+      <div class="call-hdr">
+        <span class="call-pri ${pc}">PRIORITY ${c.pri}</span>
+        <span class="call-icon-big">${c.icon}</span>
+        <span class="call-name">${c.name}</span>
+        <span class="call-timer${hot?' hot':''}">${fmtCD(c.timeLeft)}</span>
+      </div>
+      <div class="call-bdy">
+        <div class="call-loc">📍 ${c.loc}</div>
+        <div class="call-desc">${c.desc}</div>
+        <div class="call-meta">
+          <span class="call-tag">👮 ${c.minU}${c.minU!==c.maxU?'-'+c.maxU:''} units</span>
+          <span class="call-tag">💰 ${$$(c.rewMin)}-${$$(c.rewMax)}</span>
+          <span class="call-tag">⭐ ${c.xpMin}-${c.xpMax} XP</span>
+        </div>
+        <div class="call-pbar"><div class="call-pfill" style="width:${pct}%;background:${bc}"></div></div>
+        <button class="btn btn-primary w-full" onclick="G.ui.openDispatchModal('${c.id}')" ${!av?'disabled':''}>🚓 DISPATCH UNITS</button>
+      </div>
+    </div>`;
+  },
+
+  respCard(c){
+    const pc=c.pri===1?'p1':c.pri===2?'p2':'p3';
+    const vprog=c.assignedVehs.map(vid=>{
+      const v=S.vehicles.find(v=>v.id===vid);if(!v)return'';
+      const vt=VEH_TYPES[v.type];
+      let pct=0,lbl='',bc='#3b82f6';
+      if(v.phase==='traveling'){pct=Math.min(100,(v.phaseTick/v.travelTicks)*100);lbl=`En Route ${fmtCD(v.travelTicks-v.phaseTick)}`;bc='#f59e0b'}
+      else if(v.phase==='on_scene'){pct=Math.min(100,(v.phaseTick/v.sceneTicks)*100);lbl=`On Scene ${fmtCD(v.sceneTicks-v.phaseTick)}`;bc='#3b82f6'}
+      else if(v.phase==='returning'){pct=Math.min(100,(v.phaseTick/v.returnTicks)*100);lbl='Returning';bc='#10b981'}
+      return `<div class="resp-unit">
+        <span style="font-size:17px">${vt?.icon||'🚗'}</span>
+        <span style="font-size:11px;font-weight:700;min-width:55px">${v.name}</span>
+        <div class="resp-bar"><div class="resp-fill" style="width:${pct}%;background:${bc}"></div></div>
+        <span class="resp-lbl">${lbl}</span>
+      </div>`;
+    }).join('');
+    return `<div class="call-card ${pc}" style="border-color:rgba(59,130,246,.35)">
+      <div class="call-hdr">
+        <span class="call-pri ${pc}">${c.pri===1?'P1':c.pri===2?'P2':'P3'}</span>
+        <span class="call-icon-big">${c.icon}</span>
+        <span class="call-name">${c.name}</span>
+        <span style="font-size:9px;color:var(--gold-l);font-family:monospace;letter-spacing:1px">RESPONDING</span>
+      </div>
+      <div class="call-bdy">
+        <div class="call-loc">📍 ${c.loc}</div>
+        <div style="margin-top:7px">${vprog}</div>
+      </div>
+    </div>`;
+  },
+
+  // ── FLEET ──
+  renderFleet(){
+    if(this.flTab==='inv'){
+      const el=document.getElementById('fleet-inv');
+      el.innerHTML=S.vehicles.length===0?`<div class="empty-state"><span class="empty-icon">🚗</span><div class="empty-title">No Vehicles</div><div class="empty-desc">Buy vehicles in the shop tab</div></div>`:
+        `<div class="vehicle-grid">`+S.vehicles.map(v=>{
+          const vt=VEH_TYPES[v.type];
+          const sc=v.status==='available'?'s-avail':v.status==='returning'?'s-ret':v.status==='on_scene'?'s-scene':'s-disp';
+          const prec=S.precincts.find(p=>p.id===v.precinctId);
+          const offs=S.officers.filter(o=>v.officerIds.includes(o.id));
+          return `<div class="veh-card">
+            <div class="veh-card-hdr">
+              <div class="veh-icon">${vt?.icon||'🚗'}</div>
+              <div style="flex:1"><div class="veh-name">${v.name}</div><div class="veh-type">${vt?.name||v.type}</div></div>
+              <span class="veh-status ${sc}">${v.status.replace('_',' ').toUpperCase()}</span>
+            </div>
+            <div class="veh-stats">
+              <div class="veh-stat"><div class="veh-stat-v">${v.officerIds.length}/${vt?.cap||2}</div><div class="veh-stat-l">Crew</div></div>
+              <div class="veh-stat"><div class="veh-stat-v">${(vt?.spd||1).toFixed(1)}x</div><div class="veh-stat-l">Speed</div></div>
+              <div class="veh-stat"><div class="veh-stat-v">${$$(vt?.cost||0)}</div><div class="veh-stat-l">Value</div></div>
+            </div>
+            <div style="font-size:10px;color:var(--t3);margin-bottom:5px">📍 ${prec?.name||'Unassigned'}</div>
+            <div style="font-size:10px;color:var(--t2)">${offs.length?offs.map(o=>o.emo+' '+o.name.split(' ')[0]).join(', '):'No crew'}</div>
+            <button class="btn btn-ghost btn-sm w-full" style="margin-top:7px" onclick="G.ui.openAssignVehModal('${v.id}')">👮 Manage Crew</button>
+          </div>`;
+        }).join('')+'</div>';
+    } else {
+      const precopts=S.precincts.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+      document.getElementById('fleet-shop').innerHTML=`
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <label style="font-size:11px;color:var(--t3)">Assign to:</label>
+          <select id="shop-prec">${precopts}</select>
+        </div>
+        <div class="shop-grid">`+Object.entries(VEH_TYPES).map(([id,vt])=>{
+          const locked=vt.dept&&!hasDept(vt.dept);
+          return `<div class="shop-card${locked?' locked':''}">
+            <div class="shop-card-icon">${vt.icon}</div>
+            <div class="shop-card-name">${vt.name}</div>
+            <div class="shop-card-desc">${vt.desc}<br>Capacity: ${vt.cap} • Speed: ${vt.spd}x</div>
+            <div class="shop-card-cost">${$$(vt.cost)}</div>
+            ${locked?`<div class="shop-locked-lbl">🔒 Requires ${DEPTS.find(d=>d.id===vt.dept)?.name||vt.dept}</div>`:
+              `<button class="btn btn-primary w-full" onclick="G.actions.buyVeh('${id}')">Purchase</button>`}
+          </div>`;
+        }).join('')+'</div>';
+    }
+  },
+
+  // ── PERSONNEL ──
+  renderPersonnel(){
+    if(this.perTab==='roster'){
+      const el=document.getElementById('person-roster');
+      el.innerHTML=S.officers.length===0?`<div class="empty-state"><span class="empty-icon">👮</span><div class="empty-title">No Officers</div><div class="empty-desc">Hire officers from the Hire tab</div></div>`:
+        `<div class="off-grid">`+S.officers.map(o=>{
+          const rk=RANKS.find(r=>r.id===o.rank);
+          const nxt=RANKS[RANKS.findIndex(r=>r.id===o.rank)+1];
+          const xpPct=nxt?Math.min(100,((o.xp-(rk?.xpReq||0))/(nxt.xpReq-(rk?.xpReq||0)))*100):100;
+          const v=S.vehicles.find(v=>v.officerIds.includes(o.id));
+          const prec=S.precincts.find(p=>p.id===o.precinctId);
+          const sc=o.status==='available'?'#10b981':o.status==='dispatched'?'#ef4444':'#d97706';
+          return `<div class="off-card">
+            <div class="off-hdr">
+              <div class="off-ava">${o.emo}</div>
+              <div style="flex:1">
+                <div class="off-name">${o.name}</div>
+                <span class="off-rank-bdg" style="background:${rk?.col||'#94a3b8'}25;color:${rk?.col||'#94a3b8'};border:1px solid ${rk?.col||'#94a3b8'}40">${rk?.icon||''} ${rk?.name||o.rank}</span>
+              </div>
+              <span style="width:7px;height:7px;border-radius:50%;background:${sc};flex-shrink:0;display:inline-block"></span>
+            </div>
+            <div style="font-size:9px;color:var(--t3);margin-bottom:3px">📍 ${prec?.name||'Unassigned'}</div>
+            <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--t3);margin-bottom:3px">
+              <span>XP: ${o.xp.toLocaleString()}</span>
+              ${nxt?`<span>→${nxt.name}: ${nxt.xpReq.toLocaleString()}</span>`:'<span>Max Rank</span>'}
+            </div>
+            <div class="off-xpbar"><div class="off-xpfill" style="width:${xpPct}%"></div></div>
+            <button class="btn btn-ghost btn-xs w-full" style="margin-top:7px" onclick="G.ui.openAssignOffModal('${o.id}')">
+              ${v?`🚗 ${v.name}`:'Assign Vehicle'}
+            </button>
+          </div>`;
+        }).join('')+'</div>';
+    } else {
+      const precopts=S.precincts.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+      const disc=eff('hireDisc');
+      document.getElementById('person-hire').innerHTML=`
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <label style="font-size:11px;color:var(--t3)">Assign to:</label>
+          <select id="hire-prec">${precopts}</select>
+          ${disc>0?`<span style="font-size:10px;color:var(--green-l)">🎓 ${Math.round(disc*100)}% discount active</span>`:''}
+        </div>
+        <div class="shop-grid">`+RANKS.map(rk=>{
+          const cost=Math.floor(rk.hire*(1-disc));
+          const locked=(rk.id==='lieutenant'||rk.id==='captain')&&!effBool('hiRanks');
+          const daily=Math.floor(rk.salary/30);
+          return `<div class="shop-card${locked?' locked':''}">
+            <div class="shop-card-icon">${rk.icon}</div>
+            <div class="shop-card-name">${rk.name}</div>
+            <div class="shop-card-desc">Daily salary: ${$$(daily)}<br>Hire cost: ${$$(cost)}<br>Base XP: ${rk.xpReq.toLocaleString()}</div>
+            <div class="shop-card-cost">${$$(cost)}</div>
+            ${locked?`<div class="shop-locked-lbl">🔒 Requires Elite Program</div>`:
+              `<button class="btn btn-primary w-full" onclick="G.actions.hireOff('${rk.id}')">Hire ${rk.name}</button>`}
+          </div>`;
+        }).join('')+'</div>';
+    }
+  },
+
+  // ── PRECINCTS ──
+  renderPrecincts(){
+    if(this.precTabKey==='your'){
+      document.getElementById('prec-your').innerHTML=`<div class="prec-grid">`+S.precincts.map(p=>{
+        const pt=PREC_TYPES.find(t=>t.id===p.tier);
+        const offPct=(p.officerIds.length/(pt?.maxOff||10))*100;
+        const vehPct=(p.vehicleIds.length/(pt?.maxVeh||5))*100;
+        const vehs=S.vehicles.filter(v=>p.vehicleIds.includes(v.id));
+        const avail=vehs.filter(v=>v.status==='available').length;
+        return `<div class="prec-card">
+          <div class="prec-hdr">
+            <span class="prec-icon">${pt?.icon||'🏢'}</span>
+            <div style="flex:1"><div class="prec-name">${p.name}</div><div class="prec-tier">${pt?.name||p.tier} • ${p.district}</div></div>
+            <div style="text-align:right"><div style="font-size:12px;font-weight:700;color:var(--green-l)">${avail} avail.</div><div style="font-size:9px;color:var(--t3)">vehicles</div></div>
+          </div>
+          <div class="prec-bdy">
+            <div class="cap-row">
+              <div class="cap-item">
+                <div style="display:flex;justify-content:space-between;margin-bottom:2px"><span class="cap-lbl">Officers</span><span class="cap-val">${p.officerIds.length}/${pt?.maxOff||10}</span></div>
+                <div class="cap-bar"><div class="cap-fill-o" style="width:${offPct}%"></div></div>
+              </div>
+              <div class="cap-item">
+                <div style="display:flex;justify-content:space-between;margin-bottom:2px"><span class="cap-lbl">Vehicles</span><span class="cap-val">${p.vehicleIds.length}/${pt?.maxVeh||5}</span></div>
+                <div class="cap-bar"><div class="cap-fill-v" style="width:${vehPct}%"></div></div>
+              </div>
+            </div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
+              ${vehs.slice(0,8).map(v=>{const vt=VEH_TYPES[v.type];return`<span title="${vt?.name||v.type}" style="font-size:18px;cursor:default">${vt?.icon||'🚗'}</span>`}).join('')}
+              ${vehs.length>8?`<span style="font-size:10px;color:var(--t3);align-self:center">+${vehs.length-8}</span>`:''}
+            </div>
+            <div style="font-size:9px;color:var(--t3);margin-top:5px">Daily upkeep: ${$$(Math.floor((pt?.upkeep||5000)/30))}</div>
+          </div>
+        </div>`;
+      }).join('')+'</div>';
+    } else {
+      const disc=eff('precDisc');
+      document.getElementById('prec-build').innerHTML=(disc>0?`<div style="font-size:11px;color:var(--green-l);margin-bottom:12px">🏗️ Property Investment: ${Math.round(disc*100)}% discount active</div>`:'')
+        +`<div class="shop-grid">`+PREC_TYPES.map((pt,i)=>{
+          const cost=Math.floor(pt.cost*(1-disc));
+          const owned=S.precincts.filter(p=>p.tier===pt.id).length;
+          return `<div class="shop-card">
+            <div class="shop-card-icon">${pt.icon}</div>
+            <div class="shop-card-name">${pt.name}</div>
+            <div class="shop-card-desc">${pt.desc}<br>👮 ${pt.maxOff} officers<br>🚗 ${pt.maxVeh} vehicles<br>🔧 ${$$(Math.floor(pt.upkeep/30))}/day upkeep</div>
+            <div style="font-size:9px;color:var(--t3);margin-bottom:5px">Owned: ${owned}</div>
+            <div class="shop-card-cost">${$$(cost)}</div>
+            <button class="btn btn-primary w-full" onclick="buildPrec(${i})">Build</button>
+          </div>`;
+        }).join('')+'</div>';
+    }
+  },
+
+  // ── SKILLS ──
+  renderSkills(){
+    const branches=[
+      {id:'response',name:'Rapid Response',col:'#ef4444',icon:'⚡'},
+      {id:'intel',   name:'Intelligence',  col:'#3b82f6',icon:'🔍'},
+      {id:'manpower',name:'Manpower',      col:'#10b981',icon:'👮'},
+      {id:'tech',    name:'Technology',    col:'#8b5cf6',icon:'🤖'},
+      {id:'expand',  name:'Expansion',     col:'#f59e0b',icon:'🌎'},
+    ];
+    let html=`<div class="skill-tree">`;
+    branches.forEach(br=>{
+      const sks=SKILLS.filter(s=>s.br===br.id).sort((a,b)=>a.tier-b.tier);
+      html+=`<div class="skill-branch">
+        <div class="branch-title" style="background:${br.col}1a;color:${br.col};border:1px solid ${br.col}30">${br.icon} ${br.name}</div>`;
+      sks.forEach((sk,i)=>{
+        const owned=hasSkill(sk.id);
+        const prereqMet=sk.req.every(r=>hasSkill(r));
+        const canAff=S.money>=sk.cost&&S.xp>=sk.xpCost;
+        if(i>0){const prevOwned=hasSkill(sks[i-1].id);html+=`<div class="sk-conn${prevOwned?' on':''}"></div>`}
+        html+=`<div class="skill-node${owned?' owned':prereqMet?canAff?' can-afford':''  :' locked'}"
+          onclick="${!owned&&prereqMet?`unlockSkill('${sk.id}')`:''}" ${!owned&&prereqMet?'title="Click to unlock"':''}>
+          <div class="sk-icon">${sk.icon}</div>
+          <div class="sk-name">${sk.name}</div>
+          <div class="sk-desc">${sk.desc}</div>
+          ${owned?`<div style="font-size:9px;color:var(--green-l);font-weight:700">✅ OWNED</div>`:
+            prereqMet?`<div class="sk-cost">
+              <span class="sk-cost-item" style="color:var(--gold-l)">💰 ${$$(sk.cost)}</span>
+              <span class="sk-cost-item" style="color:var(--blue-l)">⭐ ${sk.xpCost.toLocaleString()} XP</span>
+            </div>`:
+            `<div style="font-size:9px;color:var(--t3)">🔒 Unlock prerequisites</div>`}
+        </div>`;
+      });
+      html+=`</div>`;
+    });
+    html+=`</div>`;
+    document.getElementById('skill-tree').innerHTML=html;
+  },
+
+  // ── DEPARTMENTS ──
+  renderDepts(){
+    document.getElementById('dept-content').innerHTML=`<div class="dept-grid">`+DEPTS.map(d=>{
+      const ul=hasDept(d.id);
+      return `<div class="dept-card ${ul?'unlocked':'locked'}">
+        <span class="dept-icon-big">${d.icon}</span>
+        <div class="dept-name">${d.name}</div>
+        <div class="dept-desc">${d.desc}</div>
+        ${ul?`<div style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--green-l);font-weight:700">✅ Active Department</div>`:
+          `<div class="dept-cost">${$$(d.cost)}</div>
+          <button class="btn btn-primary w-full" onclick="unlockDept('${d.id}')">Unlock Department</button>`}
+      </div>`;
+    }).join('')+'</div>';
+  },
+
+  // ── MODALS ──
+  openDispatchModal(callId){
+    const c=S.calls.find(c=>c.id===callId);if(!c)return;
+    if(!this.dispSel[callId])this.dispSel[callId]=[];
+    document.getElementById('modal-title').textContent=`DISPATCH — ${c.name.toUpperCase()}`;
+    document.getElementById('modal-overlay').classList.add('open');
+    this._renderDispModal(callId);
+  },
+
+  _renderDispModal(callId){
+    const c=S.calls.find(c=>c.id===callId);if(!c)return;
+    const sel=this.dispSel[callId]||[];
+    const av=availVehs();
+    document.getElementById('modal-body').innerHTML=`
+      <div class="disp-call-info">
+        <div style="font-size:36px">${c.icon}</div>
+        <div>
+          <div style="font-size:14px;font-weight:700;margin-bottom:3px">${c.name}</div>
+          <div style="font-size:11px;color:var(--t3);margin-bottom:5px">📍 ${c.loc}</div>
+          <div style="font-size:11px;color:var(--t2)">${c.desc}</div>
+          <div style="display:flex;gap:8px;margin-top:7px;flex-wrap:wrap">
+            <span class="call-tag">👮 Need ${c.minU}-${c.maxU} units</span>
+            <span class="call-tag">💰 ${$$(c.rewMin)}-${$$(c.rewMax)}</span>
+            <span class="call-tag">⏱️ ${fmtCD(c.timeLeft)} remaining</span>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;text-transform:uppercase;margin-bottom:8px">Available Units (${av.length})</div>
+      ${av.length===0?`<div class="empty-state"><span class="empty-icon">⚠️</span><div class="empty-title">No Units Available</div><div class="empty-desc">All units are deployed</div></div>`:
+        `<div class="disp-unit-list">`+av.map(v=>{
+          const vt=VEH_TYPES[v.type];const isSel=sel.includes(v.id);
+          const prec=S.precincts.find(p=>p.id===v.precinctId);
+          const offs=S.officers.filter(o=>v.officerIds.includes(o.id));
+          return `<div class="disp-unit${isSel?' sel':''}" onclick="G.ui._togDisp('${callId}','${v.id}')">
+            <span style="font-size:24px">${vt?.icon||'🚗'}</span>
+            <div style="flex:1">
+              <div style="font-size:12px;font-weight:700">${v.name} — ${vt?.name||v.type}</div>
+              <div style="font-size:10px;color:var(--t3)">${prec?.name||'?'} • ${offs.length?offs.map(o=>o.name.split(' ')[0]).join(', '):'No crew'}</div>
+            </div>
+            <div class="disp-chk" style="border-color:${isSel?'var(--blue)':'var(--bg4)'};background:${isSel?'var(--blue)':'transparent'}">${isSel?'✓':''}</div>
+          </div>`;
+        }).join('')+'</div>'
+      }
+    `;
+    const canDisp=sel.length>=c.minU;
+    document.getElementById('modal-ftr').innerHTML=`
+      <div style="flex:1;font-size:11px;color:${canDisp?'var(--green-l)':'var(--t3)'}">${sel.length} unit${sel.length!==1?'s':''} selected (min: ${c.minU})</div>
+      <button class="btn btn-ghost" onclick="G.ui.closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="G.ui._confDisp('${callId}')" ${!canDisp?'disabled':''}>🚓 Dispatch</button>
+    `;
+  },
+
+  _togDisp(callId,vehId){
+    if(!this.dispSel[callId])this.dispSel[callId]=[];
+    const c=S.calls.find(c=>c.id===callId);if(!c)return;
+    const idx=this.dispSel[callId].indexOf(vehId);
+    if(idx>=0)this.dispSel[callId].splice(idx,1);
+    else if(this.dispSel[callId].length<c.maxU)this.dispSel[callId].push(vehId);
+    this._renderDispModal(callId);
+  },
+
+  _confDisp(callId){
+    const ids=this.dispSel[callId]||[];
+    if(dispatch(callId,ids)){this.closeModal();this.tab('dispatch')}
+  },
+
+  openAssignVehModal(vehId){
+    const v=S.vehicles.find(v=>v.id===vehId);if(!v)return;
+    const vt=VEH_TYPES[v.type];const cap=vt?.cap||2;
+    const assigned=S.officers.filter(o=>v.officerIds.includes(o.id));
+    const unassigned=S.officers.filter(o=>o.precinctId===v.precinctId&&!v.officerIds.includes(o.id)&&o.status==='available');
+    document.getElementById('modal-title').textContent=`Crew — ${v.name}`;
+    document.getElementById('modal-body').innerHTML=`
+      <div style="font-size:12px;color:var(--t3);margin-bottom:12px">Capacity: ${assigned.length}/${cap}</div>
+      ${assigned.length?`<div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;margin-bottom:7px">ASSIGNED CREW</div>`+
+        assigned.map(o=>{const rk=RANKS.find(r=>r.id===o.rank);return`<div style="display:flex;align-items:center;gap:8px;padding:7px;background:var(--bg2);border-radius:5px;margin-bottom:5px">
+          <span style="font-size:20px">${o.emo}</span>
+          <div style="flex:1"><div style="font-size:12px;font-weight:700">${o.name}</div><div style="font-size:9px;color:var(--t3)">${rk?.name||o.rank}</div></div>
+          <button class="btn btn-danger btn-xs" onclick="G.actions.unassOff('${o.id}','${vehId}')">Remove</button>
+        </div>`}).join(''):''}
+      ${assigned.length<cap&&unassigned.length?`
+        <div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;margin:10px 0 7px">ADD OFFICER</div>`+
+        unassigned.map(o=>{const rk=RANKS.find(r=>r.id===o.rank);return`<div class="disp-unit" onclick="G.actions.assOff('${o.id}','${vehId}')">
+          <span style="font-size:20px">${o.emo}</span>
+          <div style="flex:1"><div style="font-size:12px;font-weight:700">${o.name}</div><div style="font-size:9px;color:var(--t3)">${rk?.name||o.rank} • XP: ${o.xp.toLocaleString()}</div></div>
+          <span style="font-size:10px;color:var(--blue-l)">Add →</span>
+        </div>`}).join(''):''}
+      ${assigned.length>=cap?`<div style="font-size:11px;color:var(--t3);margin-top:8px">Crew full — remove someone to add another</div>`:''}
+    `;
+    document.getElementById('modal-ftr').innerHTML=`<button class="btn btn-ghost" onclick="G.ui.closeModal()">Done</button>`;
+    document.getElementById('modal-overlay').classList.add('open');
+  },
+
+  openAssignOffModal(offId){
+    const o=S.officers.find(o=>o.id===offId);if(!o)return;
+    const curVeh=S.vehicles.find(v=>v.officerIds.includes(offId));
+    const avVehs=S.vehicles.filter(v=>v.precinctId===o.precinctId&&v.status==='available'&&v.officerIds.length<(VEH_TYPES[v.type]?.cap||2)&&v.id!==(curVeh?.id));
+    document.getElementById('modal-title').textContent=`Assign ${o.name}`;
+    document.getElementById('modal-body').innerHTML=`
+      ${curVeh?`<div style="padding:8px;background:var(--bg2);border-radius:5px;margin-bottom:11px;font-size:11px;color:var(--t2)">Currently in: <strong>${curVeh.name}</strong>
+        <button class="btn btn-danger btn-xs" style="margin-left:10px" onclick="G.actions.unassOff('${offId}','${curVeh.id}')">Remove</button>
+      </div>`:''}
+      ${avVehs.length?`<div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;margin-bottom:8px">AVAILABLE VEHICLES</div>`+
+        avVehs.map(v=>{const vt=VEH_TYPES[v.type];return`<div class="disp-unit" onclick="G.actions.assOff('${offId}','${v.id}')">
+          <span style="font-size:22px">${vt?.icon||'🚗'}</span>
+          <div style="flex:1"><div style="font-size:12px;font-weight:700">${v.name}</div><div style="font-size:10px;color:var(--t3)">${vt?.name||v.type} • ${v.officerIds.length}/${vt?.cap||2} crew</div></div>
+          <span style="font-size:10px;color:var(--blue-l)">Assign →</span>
+        </div>`}).join(''):`<div style="color:var(--t3);font-size:11px">No available vehicles in this precinct</div>`}
+    `;
+    document.getElementById('modal-ftr').innerHTML=`<button class="btn btn-ghost" onclick="G.ui.closeModal()">Close</button>`;
+    document.getElementById('modal-overlay').classList.add('open');
+  },
+
+  closeModal(e){
+    if(e&&e.target!==document.getElementById('modal-overlay'))return;
+    document.getElementById('modal-overlay').classList.remove('open');
+  },
+
+  toast(msg,type){
+    const icons={success:'✅',error:'❌',info:'ℹ️',warning:'⚠️',levelup:'🎉'};
+    const c=document.getElementById('toast-container');
+    const el=document.createElement('div');el.className=`toast ${type||'info'}`;
+    el.innerHTML=`<span class="toast-icon">${icons[type]||'ℹ️'}</span><span class="toast-msg">${msg}</span>`;
+    c.appendChild(el);
+    setTimeout(()=>{el.style.animation='t-out .3s ease-in forwards';setTimeout(()=>el.remove(),300)},3200);
+  },
+};
+
+// ═══════════════════════════════════════════
+// ACTIONS (called from inline onclick handlers)
+// ═══════════════════════════════════════════
+const actions = {
+  buyVeh(typeId){const p=document.getElementById('shop-prec')?.value;if(!p){ui.toast('⛔ Select a precinct','error');return}buyVeh(typeId,p);ui.renderFleet()},
+  hireOff(rankId){const p=document.getElementById('hire-prec')?.value;if(!p){ui.toast('⛔ Select a precinct','error');return}hireOfficer(rankId,p);ui.renderPersonnel()},
+  assOff(offId,vehId){
+    // Remove from any current vehicle
+    S.vehicles.forEach(v=>{const i=v.officerIds.indexOf(offId);if(i>=0)v.officerIds.splice(i,1)});
+    const v=S.vehicles.find(v=>v.id===vehId);
+    if(v){
+      v.officerIds.push(offId);
+      const o=S.officers.find(o=>o.id===offId);
+      if(o){o.vehicleId=vehId;o.precinctId=v.precinctId;
+        const prec=S.precincts.find(p=>p.id===v.precinctId);
+        if(prec&&!prec.officerIds.includes(offId))prec.officerIds.push(offId)}
+      ui.toast(`✅ Assigned to ${v.name}`,'success');
+    }
+    ui.closeModal();ui.renderPersonnel();ui.renderFleet();
+  },
+  unassOff(offId,vehId){
+    const v=S.vehicles.find(v=>v.id===vehId);
+    if(v){const i=v.officerIds.indexOf(offId);if(i>=0)v.officerIds.splice(i,1)}
+    const o=S.officers.find(o=>o.id===offId);if(o)o.vehicleId=null;
+    ui.closeModal();ui.renderPersonnel();ui.renderFleet();
+  },
+};
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+function init(){
+  const loaded=load();
+  if(loaded){ui.toast('💾 Game loaded','info')}
+  else{
+    log('🚔','Welcome to Police Commander! Your department is ready.','#3b82f6');
+    log('💡','Go to the Dispatch tab to respond to your first call.','#94a3b8');
+    log('💰',`Starting budget: ${$$(S.money)}`,'#d97706');
+  }
+  updateHeader();
+  ui.renderDash();ui.renderSkills();ui.renderDepts();
+  _nextCall=8;
+  _loop=setInterval(tick,1000);
+}
+
+// Expose globals needed by inline onclick in skill tree / dept cards etc.
+window.unlockSkill=id=>unlockSkill(id);
+window.unlockDept=id=>unlockDept(id);
+window.buildPrec=i=>buildPrec(i);
+
+return {
+  save,load,reset,
+  unlockSkill,unlockDept,
+  ui,actions,init,
+  get state(){return S},
+};
+})();
+
+window.addEventListener('DOMContentLoaded',()=>G.init());
+</script>
+</body>
 </html>
