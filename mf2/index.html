@@ -268,6 +268,14 @@ body{background:var(--bg0);color:var(--t1);font-family:'Rajdhani','Segoe UI',san
 .scroll-area{overflow-x:auto;padding-bottom:8px}
 select{background:var(--bg2);border:1px solid var(--bg3);color:var(--t1);padding:5px 9px;border-radius:5px;font-family:inherit;font-size:11px}
 select:focus{outline:none;border-color:var(--blue)}
+
+/* ── MAP ── */
+.map-wrap{position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:#040c18;margin-bottom:10px}
+.map-wrap canvas{display:block;width:100%;height:auto;cursor:default}
+.map-wrap canvas.crosshair{cursor:crosshair}
+.map-legend{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:6px 2px}
+.map-legend-item{display:flex;align-items:center;gap:5px;font-size:9px;color:var(--t3);font-family:'Share Tech Mono',monospace;letter-spacing:.5px}
+.map-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -304,6 +312,9 @@ select:focus{outline:none;border-color:var(--blue)}
     <div class="nav-sect">Operations</div>
     <div class="nav-item active" onclick="G.ui.tab('dashboard')" id="nav-dashboard">
       <span class="nav-icon">📊</span><span class="nav-lbl">Dashboard</span>
+    </div>
+    <div class="nav-item" onclick="G.ui.tab('map')" id="nav-map">
+      <span class="nav-icon">🗺️</span><span class="nav-lbl">City Map</span>
     </div>
     <div class="nav-item" onclick="G.ui.tab('dispatch')" id="nav-dispatch">
       <span class="nav-icon">🚨</span><span class="nav-lbl">Dispatch</span>
@@ -361,6 +372,14 @@ select:focus{outline:none;border-color:var(--blue)}
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- MAP -->
+    <div id="tab-map" class="tab-pane">
+      <div class="page-hdr" style="margin-bottom:10px">
+        <div><div class="page-title">🗺️ City Map</div><div class="page-sub">Live unit positions and active incidents</div></div>
+      </div>
+      <div id="map-content"></div>
     </div>
 
     <!-- DISPATCH -->
@@ -501,6 +520,24 @@ const LOCS = [
   'Old Town','University Campus','Southland','Highway 7 Corridor','Midtown'
 ];
 
+const LOC_COORDS = {
+  'Downtown Core':      {x:50, y:50},
+  'Harbor Front':       {x:47, y:83},
+  'East Side':          {x:78, y:54},
+  'West End':           {x:22, y:50},
+  'Industrial District':{x:73, y:72},
+  'Northgate':          {x:50, y:11},
+  'Riverside Park':     {x:27, y:67},
+  'Central Market':     {x:53, y:46},
+  'Airport Road':       {x:83, y:21},
+  'Financial District': {x:58, y:31},
+  'Old Town':           {x:35, y:57},
+  'University Campus':  {x:64, y:18},
+  'Southland':          {x:50, y:89},
+  'Highway 7 Corridor': {x:11, y:38},
+  'Midtown':            {x:50, y:43},
+};
+
 const VEH_TYPES = {
   // ── Standard patrol ──
   bicycle:       {name:'Police Bicycle',      desc:'Nimble urban patrol — ideal for foot beats',    cost:3500,  cap:1, spd:1.3, icon:'🚲', dept:null},
@@ -620,7 +657,7 @@ const OFF_EMO = ['👮','👮‍♀️','🕵️','🕵️‍♀️','👮‍♂
 let S = {
   money:200000, xp:0, level:1, rep:100,
   day:1, gameTime:480, tick:0,
-  precincts:[{id:'prec_1',name:'Precinct 1',tier:'small',district:'Downtown Core',vehicleIds:['veh_1'],officerIds:['off_1','off_2']}],
+  precincts:[{id:'prec_1',name:'Precinct 1',tier:'small',district:'Downtown Core',vehicleIds:['veh_1'],officerIds:['off_1','off_2'],x:50,y:50}],
   officers:[
     {id:'off_1',name:'James Wilson',rank:'officer',status:'available',vehicleId:'veh_1',xp:0,emo:'👮',precinctId:'prec_1',credentials:['gle'],education:null},
     {id:'off_2',name:'Sarah Connor',rank:'officer',status:'available',vehicleId:'veh_1',xp:0,emo:'👮‍♀️',precinctId:'prec_1',credentials:['gle'],education:null},
@@ -647,6 +684,7 @@ function hasSkill(id){return S.skills.includes(id)}
 function hasDept(id){return S.depts.includes(id)}
 function eff(key){let t=0;S.skills.forEach(id=>{const sk=SKILLS.find(s=>s.id===id);if(sk&&sk.eff[key]!==undefined)t+=sk.eff[key]});return t}
 function effBool(key){return S.skills.some(id=>{const sk=SKILLS.find(s=>s.id===id);return sk&&sk.eff[key]})}
+function calcDist(x1,y1,x2,y2){return Math.sqrt((x2-x1)**2+(y2-y1)**2)}
 function availVehs(){return S.vehicles.filter(v=>v.status==='available')}
 function activeCalls(){return S.calls.filter(c=>c.status==='waiting'||c.status==='responding')}
 function xpForLevel(l){const t=[0,500,1500,3500,7000,13000,25000,50000,100000,200000];return t[Math.min(l-1,t.length-1)]||0}
@@ -681,9 +719,14 @@ function spawnCall(){
   for(let i=0;i<pool.length;i++){r-=wts[i];if(r<=0){ct=pool[i];break}}
 
   const tBonus=eff('timeBonus');
+  const _loc=pick(LOCS);
+  const _lc=LOC_COORDS[_loc]||{x:50,y:50};
   const call={
     id:'c'+(S.callCtr++),type:ct.id,name:ct.name,pri:ct.pri,icon:ct.icon,desc:ct.desc,
-    loc:pick(LOCS),minU:ct.minU,maxU:ct.maxU,
+    loc:_loc,
+    x:Math.max(2,Math.min(98,_lc.x+(Math.random()-.5)*5)),
+    y:Math.max(2,Math.min(98,_lc.y+(Math.random()-.5)*5)),
+    minU:ct.minU,maxU:ct.maxU,
     rewMin:ct.reward[0],rewMax:ct.reward[1],xpMin:ct.xp[0],xpMax:ct.xp[1],
     durMin:ct.dur[0],durMax:ct.dur[1],
     timeout:Math.floor(ct.timeout*(1+tBonus)),timeLeft:Math.floor(ct.timeout*(1+tBonus)),
@@ -711,9 +754,13 @@ function dispatch(callId,vehIds){
   call.status='responding';call.assignedVehs=vehIds;
   const avgSpd=vehs.reduce((s,v)=>{const vt=VEH_TYPES[v.type];return s+(vt?vt.spd:1)},0)/vehs.length;
   const rb=eff('respBonus');const db=eff('durBonus');
-  const trvTicks=Math.max(5,Math.round((rnd(12,38)/avgSpd)*(1+rb)));
+  const prec=S.precincts.find(p=>p.id===vehs[0].precinctId);
+  const px=prec?.x??50,py=prec?.y??50;
+  const cx=call.x??50,cy=call.y??50;
+  const dist=Math.max(3,calcDist(px,py,cx,cy));
+  const trvTicks=Math.max(3,Math.round((dist*0.35/avgSpd)*(1+rb)));
   const scnTicks=Math.max(10,Math.round(rnd(call.durMin,call.durMax)*(1+db)/avgSpd));
-  const retTicks=Math.max(5,Math.round(rnd(8,22)/avgSpd));
+  const retTicks=Math.max(3,Math.round(dist*0.35/avgSpd));
   vehs.forEach(v=>{
     v.status='responding';v.callId=callId;v.phase='traveling';
     v.travelTicks=trvTicks;v.sceneTicks=scnTicks;v.returnTicks=retTicks;v.phaseTick=0;
@@ -938,7 +985,7 @@ function hireOfficer(rankId,precId){
   log('👮',`Hired ${nm} as ${rk.name} for ${$$(cost)}`,'#60a5fa');ui.toast(`✅ ${nm} joined the force!`,'success');ui.refresh();
 }
 
-function buildPrec(tierIdx){
+function buildPrec(tierIdx,mapX,mapY){
   const pt=PREC_TYPES[tierIdx];if(!pt)return;
   const disc=eff('precDisc');const cost=Math.floor(pt.cost*(1-disc));
   if(S.money<cost){ui.toast(`⛔ Need ${$$(cost)}`,'error');return}
@@ -946,8 +993,11 @@ function buildPrec(tierIdx){
   const id='p'+(S.precCtr++);
   const usedDist=S.precincts.map(p=>p.district);
   const dist=pick(LOCS.filter(l=>!usedDist.includes(l)))||pick(LOCS);
-  S.precincts.push({id,name:`Precinct ${S.precincts.length+1}`,tier:pt.id,district:dist,vehicleIds:[],officerIds:[]});
-  log('🏢',`Built ${pt.name} for ${$$(cost)}`,'#7c3aed');ui.toast(`✅ ${pt.name} constructed!`,'success');ui.refresh();
+  const px=mapX!=null?Math.round(mapX*10)/10:50;
+  const py=mapY!=null?Math.round(mapY*10)/10:50;
+  S.precincts.push({id,name:`Precinct ${S.precincts.length+1}`,tier:pt.id,district:dist,vehicleIds:[],officerIds:[],x:px,y:py});
+  log('🏢',`Built ${pt.name} at map position (${Math.round(px)},${Math.round(py)}) for ${$$(cost)}`,'#7c3aed');
+  ui.toast(`✅ ${pt.name} constructed!`,'success');ui.refresh();
 }
 
 function unlockDept(id){
@@ -985,6 +1035,13 @@ function load(){
         if(!o.credentials)o.credentials=['gle'];
         if(!('education' in o))o.education=null;
       });
+      S.precincts.forEach((p,i)=>{
+        if(p.x==null)p.x=i===0?50:Math.round(20+Math.random()*60);
+        if(p.y==null)p.y=i===0?50:Math.round(20+Math.random()*60);
+      });
+      S.calls.forEach(c=>{
+        if(c.x==null){const lc=LOC_COORDS[c.loc]||{x:50,y:50};c.x=lc.x;c.y=lc.y;}
+      });
       return true}
   }catch(e){}return false;
 }
@@ -995,7 +1052,7 @@ function reset(){if(confirm('Reset all progress? Cannot be undone.')){localStora
 // ═══════════════════════════════════════════
 const ui = {
   curTab:'dashboard', flTab:'inv', perTab:'roster', precTabKey:'your',
-  dispSel:{},
+  dispSel:{}, _pendingPlace:null,
 
   tab(t){
     this.curTab=t;
@@ -1034,6 +1091,7 @@ const ui = {
   refreshCur(){
     switch(this.curTab){
       case 'dashboard':  this.renderDash();       break;
+      case 'map':        this.renderMap();        break;
       case 'dispatch':   this.renderDispatch();   break;
       case 'fleet':      this.renderFleet();      break;
       case 'personnel':  this.renderPersonnel();  break;
@@ -1082,6 +1140,153 @@ const ui = {
           <span class="veh-status ${sc}">${v.status.replace('_',' ').toUpperCase()}</span>
         </div>`
       }).join('')+(S.vehicles.length>8?`<div style="padding:5px 0;font-size:10px;color:var(--t3);text-align:center">+${S.vehicles.length-8} more</div>`:'');
+  },
+
+  // ── MAP ──
+  _drawMapBase(ctx,W,H){
+    ctx.fillStyle='#040c18';ctx.fillRect(0,0,W,H);
+    // Grid
+    ctx.strokeStyle='rgba(30,41,59,0.9)';ctx.lineWidth=1;
+    for(let i=0;i<=10;i++){
+      const xi=i*W/10,yi=i*H/10;
+      ctx.beginPath();ctx.moveTo(xi,0);ctx.lineTo(xi,H);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(0,yi);ctx.lineTo(W,yi);ctx.stroke();
+    }
+    // Main arteries
+    ctx.strokeStyle='rgba(51,65,85,0.75)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(0,H*.5);ctx.lineTo(W,H*.5);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(W*.5,0);ctx.lineTo(W*.5,H);ctx.stroke();
+    ctx.lineWidth=1.5;ctx.strokeStyle='rgba(51,65,85,0.5)';
+    ctx.beginPath();ctx.moveTo(W*.1,H*.15);ctx.lineTo(W*.88,H*.85);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(W*.88,H*.2);ctx.lineTo(W*.12,H*.75);ctx.stroke();
+    // Harbor tint
+    ctx.fillStyle='rgba(8,145,178,0.06)';ctx.fillRect(0,H*.82,W,H*.18);
+    // District labels
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.font='7px "Share Tech Mono",monospace';
+    Object.entries(LOC_COORDS).forEach(([name,coord])=>{
+      ctx.fillStyle='rgba(100,116,139,0.45)';
+      ctx.fillText(name.toUpperCase(),coord.x/100*W,coord.y/100*H);
+    });
+  },
+
+  renderMap(){
+    const el=document.getElementById('map-content');if(!el)return;
+    el.innerHTML=`<div class="map-wrap"><canvas id="map-canvas"></canvas></div>
+      <div class="map-legend">
+        <div class="map-legend-item"><span class="map-dot" style="background:#1d4ed8;box-shadow:0 0 5px #3b82f6"></span>Precinct</div>
+        <div class="map-legend-item"><span class="map-dot" style="background:#dc2626"></span>P1 Incident</div>
+        <div class="map-legend-item"><span class="map-dot" style="background:#d97706"></span>P2 Incident</div>
+        <div class="map-legend-item"><span class="map-dot" style="background:#059669"></span>P3 Incident</div>
+        <div class="map-legend-item"><span style="font-size:11px">🚓</span>Unit en-route/on-scene</div>
+      </div>`;
+    const cvs=document.getElementById('map-canvas');if(!cvs)return;
+    const W=800,H=520;cvs.width=W;cvs.height=H;
+    const ctx=cvs.getContext('2d');
+    this._drawMapBase(ctx,W,H);
+    const mx=x=>x/100*W, my=y=>y/100*H;
+    // Route lines
+    ctx.setLineDash([4,6]);ctx.lineWidth=1;
+    S.vehicles.filter(v=>v.status!=='available'&&v.phase).forEach(v=>{
+      const pr=S.precincts.find(p=>p.id===v.precinctId);
+      const cl=S.calls.find(c=>c.id===v.callId);
+      if(!pr||!cl)return;
+      ctx.strokeStyle='rgba(59,130,246,0.18)';
+      ctx.beginPath();ctx.moveTo(mx(pr.x??50),my(pr.y??50));ctx.lineTo(mx(cl.x??50),my(cl.y??50));ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    // Call markers
+    S.calls.filter(c=>c.status==='waiting'||c.status==='responding').forEach(c=>{
+      const x=mx(c.x??50),y=my(c.y??50);
+      const col=c.pri===1?'#dc2626':c.pri===2?'#d97706':'#059669';
+      if(c.status==='waiting'){
+        ctx.strokeStyle=col;ctx.globalAlpha=0.22;ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.arc(x,y,14,0,Math.PI*2);ctx.stroke();
+        ctx.globalAlpha=1;
+      }
+      ctx.fillStyle=col;
+      ctx.beginPath();ctx.arc(x,y,c.status==='waiting'?5.5:4,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='rgba(248,250,252,0.88)';
+      ctx.font='8px Rajdhani,sans-serif';ctx.textAlign='center';ctx.textBaseline='top';
+      ctx.fillText(c.name,x,y+8);ctx.textBaseline='middle';
+    });
+    // Vehicle markers (interpolated positions)
+    S.vehicles.filter(v=>v.status!=='available'&&v.phase).forEach(v=>{
+      const vt=VEH_TYPES[v.type];
+      const pr=S.precincts.find(p=>p.id===v.precinctId);
+      const cl=S.calls.find(c=>c.id===v.callId);
+      if(!pr)return;
+      const prx=pr.x??50,pry=pr.y??50,clx=cl?.x??50,cly=cl?.y??50;
+      let vx,vy;
+      if(v.phase==='traveling'){const t=v.travelTicks>0?Math.min(1,v.phaseTick/v.travelTicks):0;vx=prx+(clx-prx)*t;vy=pry+(cly-pry)*t}
+      else if(v.phase==='on_scene'){vx=clx;vy=cly}
+      else{const t=v.returnTicks>0?Math.min(1,v.phaseTick/v.returnTicks):0;vx=clx+(prx-clx)*t;vy=cly+(pry-cly)*t}
+      ctx.fillStyle='#60a5fa';
+      ctx.beginPath();ctx.arc(mx(vx),my(vy),3.5,0,Math.PI*2);ctx.fill();
+      ctx.font='11px sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.fillText(vt?.icon||'🚗',mx(vx),my(vy)-2);ctx.textBaseline='middle';
+    });
+    // Precinct markers (top layer)
+    S.precincts.forEach(p=>{
+      const x=mx(p.x??50),y=my(p.y??50);
+      const g=ctx.createRadialGradient(x,y,0,x,y,20);
+      g.addColorStop(0,'rgba(59,130,246,0.22)');g.addColorStop(1,'rgba(59,130,246,0)');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,20,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#1d4ed8';ctx.beginPath();ctx.arc(x,y,7,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#93c5fd';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x,y,7,0,Math.PI*2);ctx.stroke();
+      ctx.fillStyle='#93c5fd';ctx.font='bold 9px Rajdhani,sans-serif';ctx.textAlign='center';ctx.textBaseline='top';
+      ctx.fillText(p.name,x,y+10);ctx.textBaseline='middle';
+    });
+  },
+
+  openPrecPlaceModal(tierIdx){
+    const pt=PREC_TYPES[tierIdx];if(!pt)return;
+    this._pendingPlace={tierIdx,x:50,y:50};
+    document.getElementById('modal-title').textContent=`Place — ${pt.name}`;
+    document.getElementById('modal-overlay').classList.add('open');
+    this._renderPrecPlaceModal();
+  },
+
+  _renderPrecPlaceModal(){
+    const pp=this._pendingPlace;if(!pp)return;
+    const pt=PREC_TYPES[pp.tierIdx];
+    const disc=eff('precDisc');
+    const cost=Math.floor(pt.cost*(1-disc));
+    document.getElementById('modal-body').innerHTML=`
+      <div style="font-size:11px;color:var(--t3);margin-bottom:9px">Click the map to place your new precinct, then confirm.</div>
+      <div class="map-wrap"><canvas id="place-canvas" class="crosshair"></canvas></div>
+      <div style="margin-top:8px;display:flex;gap:12px;align-items:center;font-size:10px">
+        <span style="color:var(--gold-l)">📍 (${Math.round(pp.x)}, ${Math.round(pp.y)})</span>
+        <span style="color:var(--t3)">${pt.icon} ${pt.name} — ${$$(cost)}</span>
+      </div>`;
+    const cvs=document.getElementById('place-canvas');if(!cvs)return;
+    const W=560,H=340;cvs.width=W;cvs.height=H;
+    const ctx=cvs.getContext('2d');
+    this._drawMapBase(ctx,W,H);
+    S.precincts.forEach(p=>{
+      const x=(p.x??50)/100*W,y=(p.y??50)/100*H;
+      ctx.fillStyle='#1d4ed8';ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#93c5fd';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.stroke();
+      ctx.fillStyle='#93c5fd';ctx.font='8px Rajdhani,sans-serif';ctx.textAlign='center';ctx.textBaseline='top';
+      ctx.fillText(p.name,x,y+9);ctx.textBaseline='middle';
+    });
+    // Pending marker (gold crosshair)
+    const px=pp.x/100*W,py=pp.y/100*H;
+    ctx.strokeStyle='#fcd34d';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(px-10,py);ctx.lineTo(px+10,py);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(px,py-10);ctx.lineTo(px,py+10);ctx.stroke();
+    ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(px,py,6,0,Math.PI*2);ctx.stroke();
+    // Click handler
+    cvs.onclick=(e)=>{
+      const r=cvs.getBoundingClientRect();
+      pp.x=Math.max(4,Math.min(96,((e.clientX-r.left)*(W/r.width))/W*100));
+      pp.y=Math.max(4,Math.min(96,((e.clientY-r.top)*(H/r.height))/H*100));
+      this._renderPrecPlaceModal();
+    };
+    document.getElementById('modal-ftr').innerHTML=`
+      <div style="flex:1;font-size:11px;color:var(--t3)">${pt.icon} ${pt.name} • ${$$(cost)}</div>
+      <button class="btn btn-ghost" onclick="G.ui.closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="G.actions.confirmPrecPlace()">🏢 Build Here</button>`;
   },
 
   // ── DISPATCH ──
@@ -1317,7 +1522,7 @@ const ui = {
             <div class="shop-card-desc">${pt.desc}<br>👮 ${pt.maxOff} officers<br>🚗 ${pt.maxVeh} vehicles<br>🔧 ${$$(Math.floor(pt.upkeep/30))}/day upkeep</div>
             <div style="font-size:9px;color:var(--t3);margin-bottom:5px">Owned: ${owned}</div>
             <div class="shop-card-cost">${$$(cost)}</div>
-            <button class="btn btn-primary w-full" onclick="buildPrec(${i})">Build</button>
+            <button class="btn btn-primary w-full" onclick="G.ui.openPrecPlaceModal(${i})">📍 Place &amp; Build</button>
           </div>`;
         }).join('')+'</div>';
     }
@@ -1651,6 +1856,12 @@ const actions = {
     ui.toast(`Training cancelled for ${o.name}`,'info');
     o.education=null;
     ui.refresh();
+  },
+  confirmPrecPlace(){
+    const pp=ui._pendingPlace;if(!pp)return;
+    buildPrec(pp.tierIdx,pp.x,pp.y);
+    ui._pendingPlace=null;
+    ui.closeModal();
   },
 };
 
