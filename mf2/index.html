@@ -502,16 +502,27 @@ const LOCS = [
 ];
 
 const VEH_TYPES = {
-  cruiser:     {name:'Patrol Cruiser',     desc:'Ford Crown Victoria patrol unit',        cost:25000, cap:2, spd:1.0, icon:'🚓', dept:null},
-  charger:     {name:'Dodge Charger',      desc:'High-performance pursuit vehicle',        cost:48000, cap:2, spd:1.45,icon:'🏎️', dept:null},
-  suv:         {name:'Police SUV',         desc:'Ford Explorer — versatile patrol unit',  cost:57000, cap:4, spd:1.1, icon:'🚙', dept:null},
-  motorcycle:  {name:'Police Motorcycle',  desc:'BMW pursuit motorcycle — solo unit',     cost:21000, cap:1, spd:1.75,icon:'🏍️', dept:null},
-  k9_unit:     {name:'K9 Unit',            desc:'Specialized canine search & apprehension',cost:68000, cap:2, spd:1.0, icon:'🐕', dept:'k9'},
-  swat_van:    {name:'SWAT Van',           desc:'Lenco BearCat armored tactical carrier', cost:155000,cap:8, spd:0.8, icon:'🚐', dept:'swat'},
-  armored:     {name:'Armored Vehicle',    desc:'MRAP — maximum protection',              cost:310000,cap:6, spd:0.7, icon:'🛡️', dept:'swat'},
-  helicopter:  {name:'Police Helicopter',  desc:'Bell 407 — air support & surveillance',  cost:880000,cap:2, spd:3.6, icon:'🚁', dept:'air_support'},
-  unmarked:    {name:'Unmarked Detective', desc:'Undercover surveillance vehicle',         cost:41000, cap:2, spd:1.2, icon:'🕵️', dept:'detectives'},
-  command_unit:{name:'Mobile Command',     desc:'Field command center for major ops',      cost:215000,cap:6, spd:0.6, icon:'📡', dept:null},
+  // ── Standard patrol ──
+  bicycle:       {name:'Police Bicycle',      desc:'Nimble urban patrol — ideal for foot beats',    cost:3500,  cap:1, spd:1.3, icon:'🚲', dept:null},
+  cruiser:       {name:'Patrol Cruiser',      desc:'Ford Crown Victoria patrol unit',               cost:25000, cap:2, spd:1.0, icon:'🚓', dept:null},
+  charger:       {name:'Dodge Charger',       desc:'High-performance pursuit vehicle',               cost:48000, cap:2, spd:1.45,icon:'🏎️', dept:null},
+  suv:           {name:'Police SUV',          desc:'Ford Explorer — versatile patrol unit',         cost:57000, cap:4, spd:1.1, icon:'🚙', dept:null},
+  motorcycle:    {name:'Police Motorcycle',   desc:'BMW pursuit motorcycle — solo unit',            cost:21000, cap:1, spd:1.75,icon:'🏍️', dept:null},
+  atv:           {name:'Police ATV',          desc:'Off-road quad — rugged terrain response',       cost:38000, cap:2, spd:1.55,icon:'🏕️', dept:null},
+  paddy_wagon:   {name:'Paddy Wagon',         desc:'Mass prisoner transport — 10-seat carrier',     cost:72000, cap:10,spd:0.85,icon:'🚌', dept:null},
+  horse_unit:    {name:'Mounted Unit',        desc:'Horse patrol — crowd control & community',      cost:48000, cap:1, spd:1.35,icon:'🐎', dept:null},
+  // ── Specialist ──
+  k9_unit:       {name:'K9 Unit',             desc:'Specialized canine search & apprehension',      cost:68000, cap:2, spd:1.0, icon:'🐕', dept:'k9'},
+  traffic_unit:  {name:'Traffic Cruiser',     desc:'Marked enforcement unit — radar & stingers',    cost:33000, cap:2, spd:1.1, icon:'🚦', dept:'traffic'},
+  unmarked:      {name:'Unmarked Detective',  desc:'Undercover surveillance vehicle',                cost:41000, cap:2, spd:1.2, icon:'🕵️', dept:'detectives'},
+  surveillance_van:{name:'Surveillance Van',  desc:'Mobile intel post — cameras & comms suite',     cost:92000, cap:3, spd:0.9, icon:'📷', dept:'detectives'},
+  narc_van:      {name:'Narcotics Van',       desc:'Undercover ops van — concealed gear',           cost:78000, cap:4, spd:0.95,icon:'💊', dept:'narcotics'},
+  swat_van:      {name:'SWAT Van',            desc:'Lenco BearCat armored tactical carrier',        cost:155000,cap:8, spd:0.8, icon:'🚐', dept:'swat'},
+  armored:       {name:'Armored Vehicle',     desc:'MRAP — maximum protection',                     cost:310000,cap:6, spd:0.7, icon:'🛡️', dept:'swat'},
+  bearcat:       {name:'Bearcat APC',         desc:'Heavy armored personnel carrier — 8 operators', cost:420000,cap:8, spd:0.6, icon:'🔰', dept:'swat'},
+  helicopter:    {name:'Police Helicopter',   desc:'Bell 407 — air support & surveillance',         cost:880000,cap:2, spd:3.6, icon:'🚁', dept:'air_support'},
+  drone_unit:    {name:'Drone Unit',          desc:'Remote aerial surveillance vehicle',             cost:165000,cap:2, spd:1.0, icon:'🤖', dept:'air_support'},
+  command_unit:  {name:'Mobile Command',      desc:'Field command center for major ops',             cost:215000,cap:6, spd:0.6, icon:'📡', dept:null},
 };
 
 const RANKS = [
@@ -581,11 +592,16 @@ const EDU_PATHS = [
 ];
 
 const VEH_CRED_REQ = {
-  k9_unit:   'k9',
-  swat_van:  'swat',
-  armored:   'swat',
-  helicopter:'air',
-  unmarked:  'detective',
+  k9_unit:        'k9',
+  traffic_unit:   'traffic',
+  unmarked:       'detective',
+  surveillance_van:'detective',
+  narc_van:       'narcotics',
+  swat_van:       'swat',
+  armored:        'swat',
+  bearcat:        'swat',
+  helicopter:     'air',
+  drone_unit:     'air',
 };
 
 const OFF_NAMES = [
