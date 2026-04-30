@@ -326,6 +326,10 @@ select:focus{outline:none;border-color:var(--blue)}
     <div class="nav-item" onclick="G.ui.tab('departments')" id="nav-departments">
       <span class="nav-icon">🏛️</span><span class="nav-lbl">Departments</span>
     </div>
+    <div class="nav-item" onclick="G.ui.tab('education')" id="nav-education">
+      <span class="nav-icon">🎓</span><span class="nav-lbl">Education</span>
+      <span class="nav-bdg" id="nav-bdg-education" style="display:none">0</span>
+    </div>
     <div class="sb-stats">
       <div class="sb-stat"><span class="sb-stat-lbl">Officers</span><span class="sb-stat-val" id="sb-off">2</span></div>
       <div class="sb-stat"><span class="sb-stat-lbl">Vehicles</span><span class="sb-stat-val" id="sb-veh">1</span></div>
@@ -421,6 +425,14 @@ select:focus{outline:none;border-color:var(--blue)}
         <div><div class="page-title">🏛️ Departments</div><div class="page-sub">Unlock specialized units and capabilities</div></div>
       </div>
       <div id="dept-content"></div>
+    </div>
+
+    <!-- EDUCATION -->
+    <div id="tab-education" class="tab-pane">
+      <div class="page-hdr">
+        <div><div class="page-title">🎓 Education &amp; Training</div><div class="page-sub">Certify officers for specialized vehicles and units</div></div>
+      </div>
+      <div id="edu-content"></div>
     </div>
 
   </div>
@@ -557,6 +569,25 @@ const SKILLS = [
   {id:'special_ops',      br:'expand',  tier:4,name:'Special Operations', icon:'🎯',desc:'Unlock mega-operation bonus calls',     cost:500000,xpCost:5000, req:['inter_agency'],      eff:{megaOps:true}},
 ];
 
+const EDU_PATHS = [
+  {id:'gle',      name:'General Law Enforcement',  icon:'📚', dept:null,             dur:60,  cred:'gle',      desc:'Core policing procedures and protocols'},
+  {id:'traffic',  name:'Traffic Unit',             icon:'🚦', dept:'traffic',        dur:90,  cred:'traffic',  desc:'Traffic enforcement and accident response'},
+  {id:'detective',name:'Detective Training',       icon:'🕵️', dept:'detectives',     dur:120, cred:'detective',desc:'Criminal investigation and undercover techniques'},
+  {id:'k9',       name:'K9 Handler',               icon:'🐕', dept:'k9',             dur:120, cred:'k9',       desc:'Canine search and apprehension handling'},
+  {id:'narcotics',name:'Narcotics Unit',           icon:'💊', dept:'narcotics',      dur:150, cred:'narcotics',desc:'Drug enforcement and covert raid procedures'},
+  {id:'gtf',      name:'Gang Task Force',          icon:'🎯', dept:'gang_task_force',dur:150, cred:'gtf',      desc:'Gang intelligence and counter-operations'},
+  {id:'swat',     name:'SWAT Operator',            icon:'⚡', dept:'swat',           dur:240, cred:'swat',     desc:'Tactical entry, hostage rescue, and heavy weapons'},
+  {id:'air',      name:'Air Support',              icon:'🚁', dept:'air_support',    dur:300, cred:'air',      desc:'Helicopter operations and aerial surveillance'},
+];
+
+const VEH_CRED_REQ = {
+  k9_unit:   'k9',
+  swat_van:  'swat',
+  armored:   'swat',
+  helicopter:'air',
+  unmarked:  'detective',
+};
+
 const OFF_NAMES = [
   'James Wilson','Sarah Connor','Mike Johnson','Emma Davis','Carlos Rodriguez',
   'Lisa Thompson','Robert Brown','Jennifer Martinez','William Taylor','Amanda Anderson',
@@ -575,8 +606,8 @@ let S = {
   day:1, gameTime:480, tick:0,
   precincts:[{id:'prec_1',name:'Precinct 1',tier:'small',district:'Downtown Core',vehicleIds:['veh_1'],officerIds:['off_1','off_2']}],
   officers:[
-    {id:'off_1',name:'James Wilson',rank:'officer',status:'available',vehicleId:'veh_1',xp:0,emo:'👮',precinctId:'prec_1'},
-    {id:'off_2',name:'Sarah Connor',rank:'officer',status:'available',vehicleId:'veh_1',xp:0,emo:'👮‍♀️',precinctId:'prec_1'},
+    {id:'off_1',name:'James Wilson',rank:'officer',status:'available',vehicleId:'veh_1',xp:0,emo:'👮',precinctId:'prec_1',credentials:['gle'],education:null},
+    {id:'off_2',name:'Sarah Connor',rank:'officer',status:'available',vehicleId:'veh_1',xp:0,emo:'👮‍♀️',precinctId:'prec_1',credentials:['gle'],education:null},
   ],
   vehicles:[{id:'veh_1',name:'Unit 1',type:'cruiser',precinctId:'prec_1',officerIds:['off_1','off_2'],status:'available',callId:null,phase:null,phaseTick:0,travelTicks:0,sceneTicks:0,returnTicks:0}],
   calls:[],callCtr:1,vehCtr:2,offCtr:3,precCtr:2,
@@ -586,6 +617,7 @@ let S = {
 };
 let _nextCall = 10;
 let _loop = null;
+let _eduPromptQueue = [];
 
 // ═══════════════════════════════════════════
 // UTILS
@@ -734,7 +766,12 @@ function promoteOfficer(o){
   const ri=RANKS.findIndex(r=>r.id===o.rank);if(ri<0)return;
   const nr=RANKS[ri+1];if(!nr)return;
   if((nr.id==='lieutenant'||nr.id==='captain')&&!effBool('hiRanks'))return;
-  if(o.xp>=nr.xpReq){o.rank=nr.id;log('⭐',`${o.name} promoted to ${nr.name}!`,'#fbbf24');ui.toast(`⭐ ${o.name} → ${nr.name}!`,'warning')}
+  if(o.xp>=nr.xpReq){
+    o.rank=nr.id;
+    log('⭐',`${o.name} promoted to ${nr.name}!`,'#fbbf24');
+    ui.toast(`⭐ ${o.name} → ${nr.name}! Go to Education to choose new training.`,'warning');
+    _eduPromptQueue.push(o.id);
+  }
 }
 
 function payroll(){
@@ -780,13 +817,33 @@ function tick(){
       }
     }
   });
+  // Process education timers (only while available)
+  S.officers.forEach(o=>{
+    if(o.education&&o.status==='available'){
+      o.education.ticksLeft=Math.max(0,o.education.ticksLeft-1);
+      if(o.education.ticksLeft===0){
+        const path=EDU_PATHS.find(p=>p.id===o.education.path);
+        if(path&&!(o.credentials||[]).includes(path.cred)){
+          if(!o.credentials)o.credentials=[];
+          o.credentials.push(path.cred);
+        }
+        log('🎓',`${o.name} completed ${path?.name||'training'} and earned ${path?.cred||'credential'}!`,'#10b981');
+        ui.toast(`🎓 ${o.name} certified: ${path?.name||'Training'}!`,'success');
+        o.education=null;
+      }
+    }
+  });
+  // Show pending education path prompts one at a time
+  if(_eduPromptQueue.length>0&&!document.getElementById('modal-overlay').classList.contains('open')){
+    ui.openEduPathModal(_eduPromptQueue.shift());
+  }
   // Cleanup old completed/failed calls
   if(S.tick%120===0)S.calls=S.calls.filter(c=>c.status==='waiting'||c.status==='responding');
   updateHeader();
   const wait=S.calls.filter(c=>c.status==='waiting').length;
   const bdg=document.getElementById('nav-bdg-dispatch');
   if(bdg){bdg.textContent=wait;bdg.style.display=wait>0?'':'none'}
-  if(S.tick%4===0)ui.refreshCur();
+  ui.refreshCur();
 }
 
 function updateHeader(){
@@ -805,6 +862,8 @@ function updateHeader(){
   el('sb-calls').textContent=S.stats.today;
   el('sb-prec').textContent=S.precincts.length;
   const skXp=document.getElementById('skill-xp');if(skXp)skXp.textContent=S.xp.toLocaleString();
+  const eduBdg=document.getElementById('nav-bdg-education');
+  if(eduBdg){const cnt=S.officers.filter(o=>o.education).length;eduBdg.textContent=cnt;eduBdg.style.display=cnt>0?'':'none'}
 }
 
 function flashAlert(){
@@ -858,7 +917,7 @@ function hireOfficer(rankId,precId){
   const id='o'+(S.offCtr++);
   const usedNames=S.officers.map(o=>o.name);
   const nm=pick(OFF_NAMES.filter(n=>!usedNames.includes(n)))||`Officer ${S.offCtr}`;
-  S.officers.push({id,name:nm,rank:rankId,status:'available',vehicleId:null,xp:rk.xpReq,emo:pick(OFF_EMO),precinctId:precId});
+  S.officers.push({id,name:nm,rank:rankId,status:'available',vehicleId:null,xp:rk.xpReq,emo:pick(OFF_EMO),precinctId:precId,credentials:['gle'],education:null});
   prec.officerIds.push(id);
   log('👮',`Hired ${nm} as ${rk.name} for ${$$(cost)}`,'#60a5fa');ui.toast(`✅ ${nm} joined the force!`,'success');ui.refresh();
 }
@@ -905,7 +964,11 @@ function load(){
     if(d){Object.assign(S,JSON.parse(d));_nextCall=S.tick+10;
       S.calls=S.calls.filter(c=>c.status==='waiting'||c.status==='responding');
       S.vehicles.forEach(v=>{if(v.status!=='available'){const c=S.calls.find(c=>c.id===v.callId);if(!c){v.status='available';v.callId=null;v.phase=null}}});
-      S.officers.forEach(o=>{if(o.status==='dispatched'){const v=S.vehicles.find(v=>v.officerIds.includes(o.id));if(!v||v.status==='available')o.status='available'}});
+      S.officers.forEach(o=>{
+        if(o.status==='dispatched'){const v=S.vehicles.find(v=>v.officerIds.includes(o.id));if(!v||v.status==='available')o.status='available'}
+        if(!o.credentials)o.credentials=['gle'];
+        if(!('education' in o))o.education=null;
+      });
       return true}
   }catch(e){}return false;
 }
@@ -954,13 +1017,14 @@ const ui = {
 
   refreshCur(){
     switch(this.curTab){
-      case 'dashboard':  this.renderDash();    break;
-      case 'dispatch':   this.renderDispatch(); break;
-      case 'fleet':      this.renderFleet();    break;
-      case 'personnel':  this.renderPersonnel();break;
-      case 'precincts':  this.renderPrecincts();break;
-      case 'skills':     this.renderSkills();   break;
-      case 'departments':this.renderDepts();    break;
+      case 'dashboard':  this.renderDash();       break;
+      case 'dispatch':   this.renderDispatch();   break;
+      case 'fleet':      this.renderFleet();      break;
+      case 'personnel':  this.renderPersonnel();  break;
+      case 'precincts':  this.renderPrecincts();  break;
+      case 'skills':     this.renderSkills();     break;
+      case 'departments':this.renderDepts();      break;
+      case 'education':  this.renderEducation();  break;
     }
   },
 
@@ -1296,6 +1360,85 @@ const ui = {
     }).join('')+'</div>';
   },
 
+  // ── EDUCATION ──
+  renderEducation(){
+    const inTraining=S.officers.filter(o=>o.education);
+    const avail=S.officers.filter(o=>!o.education&&o.status==='available');
+    const dispatched=S.officers.filter(o=>!o.education&&o.status!=='available');
+    let html='';
+    if(!S.officers.length){
+      html='<div class="empty-state"><span class="empty-icon">🎓</span><div class="empty-title">No Officers</div><div class="empty-desc">Hire officers from the Personnel tab</div></div>';
+    } else {
+      if(inTraining.length)html+=`<div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-lbl">In Training (${inTraining.length})</div><div class="sec-div-line"></div></div><div class="off-grid">`+inTraining.map(o=>this._eduCard(o)).join('')+'</div>';
+      if(avail.length)html+=`<div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-lbl">Available for Training (${avail.length})</div><div class="sec-div-line"></div></div><div class="off-grid">`+avail.map(o=>this._eduCard(o)).join('')+'</div>';
+      if(dispatched.length)html+=`<div class="sec-div"><div class="sec-div-line"></div><div class="sec-div-lbl">Dispatched / Unavailable (${dispatched.length})</div><div class="sec-div-line"></div></div><div class="off-grid">`+dispatched.map(o=>this._eduCard(o)).join('')+'</div>';
+    }
+    document.getElementById('edu-content').innerHTML=html;
+  },
+
+  _eduCard(o){
+    const rk=RANKS.find(r=>r.id===o.rank);
+    const creds=o.credentials||[];
+    const edu=o.education;
+    const path=edu?EDU_PATHS.find(p=>p.id===edu.path):null;
+    const pct=edu?Math.max(0,Math.min(100,(1-edu.ticksLeft/edu.totalTicks)*100)):0;
+    const canEnroll=!edu&&o.status==='available';
+    const credBadges=creds.length
+      ?creds.map(c=>{const p=EDU_PATHS.find(ep=>ep.cred===c);return`<span style="font-size:8px;padding:2px 5px;border-radius:3px;background:rgba(59,130,246,.15);color:var(--blue-l);border:1px solid rgba(59,130,246,.2);font-family:monospace;white-space:nowrap">${p?.icon||'📜'} ${p?.name||c}</span>`}).join('')
+      :`<span style="font-size:9px;color:var(--t3)">No credentials</span>`;
+    return `<div class="off-card">
+      <div class="off-hdr">
+        <div class="off-ava">${o.emo}</div>
+        <div style="flex:1">
+          <div class="off-name">${o.name}</div>
+          <span class="off-rank-bdg" style="background:${rk?.col||'#94a3b8'}25;color:${rk?.col||'#94a3b8'};border:1px solid ${rk?.col||'#94a3b8'}40">${rk?.icon||''} ${rk?.name||o.rank}</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:7px">${credBadges}</div>
+      ${edu?`
+        <div style="font-size:9px;color:var(--gold-l);margin-bottom:4px;font-family:monospace">🎓 ${path?.name||edu.path}</div>
+        <div style="height:4px;background:var(--bg2);border-radius:2px;overflow:hidden;margin-bottom:4px"><div style="height:100%;width:${pct.toFixed(1)}%;background:var(--blue);border-radius:2px;transition:width 1s linear"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--t3);margin-bottom:6px"><span>${Math.round(pct)}% complete</span><span>⏱️ ${fmtCD(edu.ticksLeft)}</span></div>
+        <button class="btn btn-danger btn-xs w-full" onclick="G.actions.cancelEdu('${o.id}')">Cancel Training</button>
+      `:`
+        <div style="font-size:9px;color:var(--t3);margin-bottom:5px">${o.status!=='available'?'🚓 Unavailable while dispatched':'Ready for training'}</div>
+        <button class="btn btn-primary btn-sm w-full" ${!canEnroll?'disabled':''} onclick="G.ui.openEduPathModal('${o.id}')">🎓 Enroll in Training</button>
+      `}
+    </div>`;
+  },
+
+  openEduPathModal(offId){
+    const o=S.officers.find(o=>o.id===offId);if(!o)return;
+    const creds=o.credentials||[];
+    const paths=EDU_PATHS.filter(p=>(!p.dept||hasDept(p.dept))&&!creds.includes(p.cred));
+    document.getElementById('modal-title').textContent=`Training — ${o.name}`;
+    document.getElementById('modal-overlay').classList.add('open');
+    document.getElementById('modal-body').innerHTML=`
+      <div style="display:flex;align-items:center;gap:9px;padding:10px;background:var(--bg2);border-radius:6px;margin-bottom:14px">
+        <span style="font-size:28px">${o.emo}</span>
+        <div>
+          <div style="font-size:13px;font-weight:700">${o.name}</div>
+          <div style="font-size:10px;color:var(--t3)">${RANKS.find(r=>r.id===o.rank)?.name||o.rank} • ${creds.length} credential${creds.length!==1?'s':''}</div>
+        </div>
+      </div>
+      ${paths.length===0
+        ?`<div class="empty-state"><span class="empty-icon">🎓</span><div class="empty-title">All Available Paths Complete</div><div class="empty-desc">Unlock more departments to access additional training</div></div>`
+        :`<div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;text-transform:uppercase;margin-bottom:9px">Available Training Paths</div>
+        <div class="disp-unit-list">`+paths.map(p=>`
+          <div class="disp-unit" onclick="G.actions.startEdu('${offId}','${p.id}')">
+            <span style="font-size:24px">${p.icon}</span>
+            <div style="flex:1">
+              <div style="font-size:12px;font-weight:700">${p.name}</div>
+              <div style="font-size:10px;color:var(--t3)">${p.desc}</div>
+              <div style="font-size:9px;color:var(--cyan-l);margin-top:2px">⏱️ Duration: ${fmtCD(p.dur)}</div>
+            </div>
+            <span style="font-size:10px;color:var(--blue-l)">Enroll →</span>
+          </div>`).join('')+'</div>'
+      }
+    `;
+    document.getElementById('modal-ftr').innerHTML=`<button class="btn btn-ghost" onclick="G.ui.closeModal()">Skip for now</button>`;
+  },
+
   // ── MODALS ──
   openDispatchModal(callId){
     const c=S.calls.find(c=>c.id===callId);if(!c)return;
@@ -1366,10 +1509,15 @@ const ui = {
     const v=S.vehicles.find(v=>v.id===vehId);if(!v)return;
     const vt=VEH_TYPES[v.type];const cap=vt?.cap||2;
     const assigned=S.officers.filter(o=>v.officerIds.includes(o.id));
-    const unassigned=S.officers.filter(o=>o.precinctId===v.precinctId&&!v.officerIds.includes(o.id)&&o.status==='available');
+    const credReq=VEH_CRED_REQ[v.type];
+    const credPath=credReq?EDU_PATHS.find(p=>p.cred===credReq):null;
+    const precOffs=S.officers.filter(o=>o.precinctId===v.precinctId&&!v.officerIds.includes(o.id)&&o.status==='available');
+    const unassigned=credReq?precOffs.filter(o=>(o.credentials||[]).includes(credReq)):precOffs;
+    const unqualified=credReq?precOffs.filter(o=>!(o.credentials||[]).includes(credReq)):[];
     document.getElementById('modal-title').textContent=`Crew — ${v.name}`;
     document.getElementById('modal-body').innerHTML=`
-      <div style="font-size:12px;color:var(--t3);margin-bottom:12px">Capacity: ${assigned.length}/${cap}</div>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:12px">Capacity: ${assigned.length}/${cap}${credPath?` &nbsp;•&nbsp; <span style="color:var(--gold-l)">${credPath.icon} Requires ${credPath.name}</span>`:''}
+      </div>
       ${assigned.length?`<div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;margin-bottom:7px">ASSIGNED CREW</div>`+
         assigned.map(o=>{const rk=RANKS.find(r=>r.id===o.rank);return`<div style="display:flex;align-items:center;gap:8px;padding:7px;background:var(--bg2);border-radius:5px;margin-bottom:5px">
           <span style="font-size:20px">${o.emo}</span>
@@ -1383,6 +1531,11 @@ const ui = {
           <div style="flex:1"><div style="font-size:12px;font-weight:700">${o.name}</div><div style="font-size:9px;color:var(--t3)">${rk?.name||o.rank} • XP: ${o.xp.toLocaleString()}</div></div>
           <span style="font-size:10px;color:var(--blue-l)">Add →</span>
         </div>`}).join(''):''}
+      ${unqualified.length?`<div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;margin:10px 0 7px">MISSING CREDENTIALS (${unqualified.length})</div>`+
+        unqualified.map(o=>{const rk=RANKS.find(r=>r.id===o.rank);return`<div style="display:flex;align-items:center;gap:8px;padding:7px;background:var(--bg2);border-radius:5px;margin-bottom:5px;opacity:.45">
+          <span style="font-size:20px">${o.emo}</span>
+          <div style="flex:1"><div style="font-size:12px;font-weight:700">${o.name}</div><div style="font-size:9px;color:var(--red-l)">🔒 Needs ${credPath?.name||credReq} certification</div></div>
+        </div>`}).join(''):''}
       ${assigned.length>=cap?`<div style="font-size:11px;color:var(--t3);margin-top:8px">Crew full — remove someone to add another</div>`:''}
     `;
     document.getElementById('modal-ftr').innerHTML=`<button class="btn btn-ghost" onclick="G.ui.closeModal()">Done</button>`;
@@ -1391,8 +1544,11 @@ const ui = {
 
   openAssignOffModal(offId){
     const o=S.officers.find(o=>o.id===offId);if(!o)return;
+    const creds=o.credentials||[];
     const curVeh=S.vehicles.find(v=>v.officerIds.includes(offId));
-    const avVehs=S.vehicles.filter(v=>v.precinctId===o.precinctId&&v.status==='available'&&v.officerIds.length<(VEH_TYPES[v.type]?.cap||2)&&v.id!==(curVeh?.id));
+    const baseFilter=v=>v.precinctId===o.precinctId&&v.status==='available'&&v.officerIds.length<(VEH_TYPES[v.type]?.cap||2)&&v.id!==(curVeh?.id);
+    const avVehs=S.vehicles.filter(v=>baseFilter(v)&&(!VEH_CRED_REQ[v.type]||creds.includes(VEH_CRED_REQ[v.type])));
+    const lockedVehs=S.vehicles.filter(v=>baseFilter(v)&&VEH_CRED_REQ[v.type]&&!creds.includes(VEH_CRED_REQ[v.type]));
     document.getElementById('modal-title').textContent=`Assign ${o.name}`;
     document.getElementById('modal-body').innerHTML=`
       ${curVeh?`<div style="padding:8px;background:var(--bg2);border-radius:5px;margin-bottom:11px;font-size:11px;color:var(--t2)">Currently in: <strong>${curVeh.name}</strong>
@@ -1403,7 +1559,13 @@ const ui = {
           <span style="font-size:22px">${vt?.icon||'🚗'}</span>
           <div style="flex:1"><div style="font-size:12px;font-weight:700">${v.name}</div><div style="font-size:10px;color:var(--t3)">${vt?.name||v.type} • ${v.officerIds.length}/${vt?.cap||2} crew</div></div>
           <span style="font-size:10px;color:var(--blue-l)">Assign →</span>
-        </div>`}).join(''):`<div style="color:var(--t3);font-size:11px">No available vehicles in this precinct</div>`}
+        </div>`}).join(''):''}
+      ${!avVehs.length&&!lockedVehs.length?`<div style="color:var(--t3);font-size:11px">No available vehicles in this precinct</div>`:''}
+      ${lockedVehs.length?`<div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;margin:10px 0 7px">REQUIRES CREDENTIALS</div>`+
+        lockedVehs.map(v=>{const vt=VEH_TYPES[v.type];const cp=EDU_PATHS.find(p=>p.cred===VEH_CRED_REQ[v.type]);return`<div style="display:flex;align-items:center;gap:9px;padding:9px 11px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;margin-bottom:5px;opacity:.45">
+          <span style="font-size:22px">${vt?.icon||'🚗'}</span>
+          <div style="flex:1"><div style="font-size:12px;font-weight:700">${v.name}</div><div style="font-size:10px;color:var(--red-l)">🔒 Needs ${cp?.name||VEH_CRED_REQ[v.type]}</div></div>
+        </div>`}).join(''):''}
     `;
     document.getElementById('modal-ftr').innerHTML=`<button class="btn btn-ghost" onclick="G.ui.closeModal()">Close</button>`;
     document.getElementById('modal-overlay').classList.add('open');
@@ -1431,17 +1593,21 @@ const actions = {
   buyVeh(typeId){const p=document.getElementById('shop-prec')?.value;if(!p){ui.toast('⛔ Select a precinct','error');return}buyVeh(typeId,p);ui.renderFleet()},
   hireOff(rankId){const p=document.getElementById('hire-prec')?.value;if(!p){ui.toast('⛔ Select a precinct','error');return}hireOfficer(rankId,p);ui.renderPersonnel()},
   assOff(offId,vehId){
-    // Remove from any current vehicle
-    S.vehicles.forEach(v=>{const i=v.officerIds.indexOf(offId);if(i>=0)v.officerIds.splice(i,1)});
     const v=S.vehicles.find(v=>v.id===vehId);
-    if(v){
-      v.officerIds.push(offId);
-      const o=S.officers.find(o=>o.id===offId);
-      if(o){o.vehicleId=vehId;o.precinctId=v.precinctId;
-        const prec=S.precincts.find(p=>p.id===v.precinctId);
-        if(prec&&!prec.officerIds.includes(offId))prec.officerIds.push(offId)}
-      ui.toast(`✅ Assigned to ${v.name}`,'success');
+    const o=S.officers.find(o=>o.id===offId);
+    if(!v||!o)return;
+    const credReq=VEH_CRED_REQ[v.type];
+    if(credReq&&!(o.credentials||[]).includes(credReq)){
+      const path=EDU_PATHS.find(p=>p.cred===credReq);
+      ui.toast(`⛔ ${o.name} needs ${path?.name||credReq} certification`,'error');
+      return;
     }
+    S.vehicles.forEach(v=>{const i=v.officerIds.indexOf(offId);if(i>=0)v.officerIds.splice(i,1)});
+    v.officerIds.push(offId);
+    o.vehicleId=vehId;o.precinctId=v.precinctId;
+    const prec=S.precincts.find(p=>p.id===v.precinctId);
+    if(prec&&!prec.officerIds.includes(offId))prec.officerIds.push(offId);
+    ui.toast(`✅ Assigned to ${v.name}`,'success');
     ui.closeModal();ui.renderPersonnel();ui.renderFleet();
   },
   unassOff(offId,vehId){
@@ -1449,6 +1615,26 @@ const actions = {
     if(v){const i=v.officerIds.indexOf(offId);if(i>=0)v.officerIds.splice(i,1)}
     const o=S.officers.find(o=>o.id===offId);if(o)o.vehicleId=null;
     ui.closeModal();ui.renderPersonnel();ui.renderFleet();
+  },
+  startEdu(offId,pathId){
+    const o=S.officers.find(o=>o.id===offId);
+    const path=EDU_PATHS.find(p=>p.id===pathId);
+    if(!o||!path)return;
+    if(o.education){ui.toast('⛔ Already enrolled in training','error');return}
+    if(o.status!=='available'){ui.toast('⛔ Officer must be available to start training','error');return}
+    o.education={path:pathId,ticksLeft:path.dur,totalTicks:path.dur};
+    log('🎓',`${o.name} enrolled in ${path.name}`,'#3b82f6');
+    ui.toast(`🎓 ${o.name} enrolled in ${path.name}`,'info');
+    ui.closeModal();ui.refresh();
+  },
+  cancelEdu(offId){
+    const o=S.officers.find(o=>o.id===offId);
+    if(!o||!o.education)return;
+    const path=EDU_PATHS.find(p=>p.id===o.education.path);
+    log('🚫',`${o.name} withdrew from ${path?.name||'training'}`,'#94a3b8');
+    ui.toast(`Training cancelled for ${o.name}`,'info');
+    o.education=null;
+    ui.refresh();
   },
 };
 
