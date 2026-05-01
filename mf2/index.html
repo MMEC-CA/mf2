@@ -1867,8 +1867,8 @@ const ui = {
 // ACTIONS (called from inline onclick handlers)
 // ═══════════════════════════════════════════
 const actions = {
-  buyVeh(typeId){const p=document.getElementById('shop-prec')?.value||S.precincts[0]?.id;if(!p){ui.toast('⛔ No precincts available','error');return}buyVeh(typeId,p);ui.renderFleet()},
-  hireOff(rankId){const p=document.getElementById('hire-prec')?.value||S.precincts[0]?.id;if(!p){ui.toast('⛔ No precincts available','error');return}hireOfficer(rankId,p);ui.renderPersonnel()},
+    buyVeh(typeId){const p=document.getElementById('shop-prec')?.value||S.precincts[0]?.id;if(!p){ui.toast('⛔ No precincts available','error');return}buyVeh(typeId,p);ui.renderFleet()},
+    hireOff(rankId){const p=document.getElementById('hire-prec')?.value;if(!p){ui.toast('⛔ Select a precinct','error');return}hireOfficer(rankId,p);ui.renderPersonnel()},
     const v=S.vehicles.find(v=>v.id===vehId);
     const o=S.officers.find(o=>o.id===offId);
     if(!v||!o)return;
