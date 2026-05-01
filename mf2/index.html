@@ -276,62 +276,6 @@ select:focus{outline:none;border-color:var(--blue)}
 .map-legend{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:6px 2px}
 .map-legend-item{display:flex;align-items:center;gap:5px;font-size:9px;color:var(--t3);font-family:'Share Tech Mono',monospace;letter-spacing:.5px}
 .map-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-/* ── SPEED CONTROL ── */
-.speed-ctrl{display:flex;gap:3px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:2px;flex-shrink:0}
-.speed-btn{padding:3px 8px;font-size:9px;font-family:'Share Tech Mono',monospace;font-weight:700;border:none;background:transparent;color:var(--t3);border-radius:4px;cursor:pointer;letter-spacing:1px;transition:all .15s}
-.speed-btn:hover{color:var(--t1);background:var(--bg3)}
-.speed-btn.active{background:var(--blue-d);color:#fff}
-/* ── CRIME WAVE BANNER ── */
-#crime-wave-banner{display:none;background:linear-gradient(90deg,rgba(220,38,38,.12),rgba(220,38,38,.05));border-bottom:1px solid rgba(220,38,38,.25);padding:5px 16px;font-size:11px;flex-shrink:0;align-items:center;gap:10px}
-#crime-wave-banner.show{display:flex}
-.cw-icon{font-size:18px}.cw-name{font-family:'Orbitron',monospace;font-weight:700;color:var(--red-l);font-size:11px;letter-spacing:1px;margin-right:6px}
-.cw-desc{color:var(--t2);flex:1}.cw-timer{font-family:'Share Tech Mono',monospace;color:var(--gold-l);font-size:10px;white-space:nowrap}
-/* ── EVENT TICKER ── */
-#event-ticker{display:none;background:linear-gradient(90deg,rgba(217,119,6,.1),rgba(217,119,6,.03));border-bottom:1px solid rgba(217,119,6,.2);padding:4px 16px;font-size:10px;flex-shrink:0;align-items:center;gap:8px}
-#event-ticker.show{display:flex}
-.ev-badge{font-size:14px}.ev-text{color:var(--gold-l);flex:1;font-family:'Share Tech Mono',monospace}
-/* ── TUTORIAL ── */
-#tutorial-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(6px);z-index:4000;align-items:center;justify-content:center}
-#tutorial-overlay.open{display:flex}
-.tut-card{background:var(--bg1);border:1px solid var(--bg3);border-radius:14px;padding:28px 32px;max-width:460px;width:90%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.7)}
-.tut-step{font-size:9px;letter-spacing:3px;color:var(--t3);font-family:'Share Tech Mono',monospace;text-transform:uppercase;margin-bottom:12px}
-.tut-icon{font-size:48px;margin-bottom:14px;display:block}
-.tut-title{font-family:'Orbitron',monospace;font-size:16px;font-weight:700;margin-bottom:10px}
-.tut-body{font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:20px}
-.tut-dots{display:flex;gap:6px;justify-content:center;margin-bottom:20px}
-.tut-dot{width:6px;height:6px;border-radius:50%;background:var(--bg3);transition:all .2s}
-.tut-dot.active{background:var(--blue);width:18px;border-radius:3px}
-.tut-btns{display:flex;gap:9px;justify-content:center}
-/* ── MULTIPLAYER ── */
-#mp-status{display:flex;align-items:center;gap:7px;padding:4px 10px;border-radius:5px;background:var(--bg2);border:1px solid var(--border);cursor:pointer;transition:all .2s;font-size:10px;font-family:'Share Tech Mono',monospace;flex-shrink:0;white-space:nowrap}
-#mp-status:hover{border-color:var(--blue)}
-#mp-status.connected{border-color:rgba(5,150,105,.4);background:rgba(5,150,105,.08)}
-.mp-dot{width:7px;height:7px;border-radius:50%;background:var(--bg3);flex-shrink:0}
-.mp-dot.online{background:var(--green);box-shadow:0 0 6px var(--green)}
-.mp-player{display:flex;align-items:center;gap:7px;padding:5px 8px;background:var(--bg2);border-radius:5px;margin-bottom:4px}
-.mp-player-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.mp-player-name{font-size:11px;font-weight:600}
-.mp-player-stats{font-size:9px;color:var(--t3);font-family:'Share Tech Mono',monospace;margin-left:auto}
-/* ── SHARED CALL BADGE ── */
-.call-shared-badge{font-size:8px;padding:2px 5px;border-radius:3px;background:rgba(59,130,246,.15);color:var(--blue-l);border:1px solid rgba(59,130,246,.25);font-family:'Share Tech Mono',monospace;font-weight:700;letter-spacing:1px}
-.call-claimed-badge{font-size:8px;padding:2px 5px;border-radius:3px;background:rgba(220,38,38,.15);color:var(--red-l);border:1px solid rgba(220,38,38,.25);font-family:'Share Tech Mono',monospace}
-/* ── GRANTS ── */
-.grant-card{background:var(--bg1);border:1px solid var(--border);border-radius:7px;padding:11px 13px;margin-bottom:9px}
-.grant-hdr{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.grant-icon{font-size:20px}.grant-name{font-size:12px;font-weight:700;flex:1}.grant-reward{font-family:'Orbitron',monospace;font-size:11px;color:var(--gold-l)}
-.grant-prog{height:4px;background:var(--bg2);border-radius:2px;overflow:hidden;margin-bottom:5px}
-.grant-prog-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--blue-l));border-radius:2px;transition:width .5s}
-.grant-desc{font-size:10px;color:var(--t3)}.grant-deadline{font-size:9px;color:var(--gold-l);font-family:'Share Tech Mono',monospace;margin-top:3px}
-/* ── FACTION THREAT ── */
-.faction-card{background:var(--bg1);border:1px solid var(--border);border-radius:7px;padding:9px 12px;margin-bottom:6px}
-.threat-pips{display:flex;gap:3px;margin-top:4px}
-.threat-pip{width:16px;height:5px;border-radius:2px;background:var(--bg3)}
-.threat-pip.on{background:var(--red)}
-/* ── DISTRICT CRIME PILL ── */
-.crime-pill{display:inline-flex;align-items:center;gap:4px;font-size:9px;padding:2px 6px;border-radius:3px;font-family:'Share Tech Mono',monospace;white-space:nowrap}
-.crime-low{background:rgba(5,150,105,.1);color:var(--green-l);border:1px solid rgba(5,150,105,.2)}
-.crime-med{background:rgba(217,119,6,.1);color:var(--gold-l);border:1px solid rgba(217,119,6,.2)}
-.crime-high{background:rgba(220,38,38,.1);color:var(--red-l);border:1px solid rgba(220,38,38,.2)}
 </style>
 </head>
 <body>
@@ -1867,8 +1811,9 @@ const ui = {
 // ACTIONS (called from inline onclick handlers)
 // ═══════════════════════════════════════════
 const actions = {
-    buyVeh(typeId){const p=document.getElementById('shop-prec')?.value||S.precincts[0]?.id;if(!p){ui.toast('⛔ No precincts available','error');return}buyVeh(typeId,p);ui.renderFleet()},
-    hireOff(rankId){const p=document.getElementById('hire-prec')?.value;if(!p){ui.toast('⛔ Select a precinct','error');return}hireOfficer(rankId,p);ui.renderPersonnel()},
+  buyVeh(typeId){const p=document.getElementById('shop-prec')?.value;if(!p){ui.toast('⛔ Select a precinct','error');return}buyVeh(typeId,p);ui.renderFleet()},
+  hireOff(rankId){const p=document.getElementById('hire-prec')?.value;if(!p){ui.toast('⛔ Select a precinct','error');return}hireOfficer(rankId,p);ui.renderPersonnel()},
+  assOff(offId,vehId){
     const v=S.vehicles.find(v=>v.id===vehId);
     const o=S.officers.find(o=>o.id===offId);
     if(!v||!o)return;
