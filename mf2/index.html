@@ -803,21 +803,49 @@ function dispatch(callId,vehIds){
   const vehs=vehIds.map(id=>S.vehicles.find(v=>v.id===id)).filter(Boolean);
   if(!vehs.length)return false;
   call.status='responding';call.assignedVehs=vehIds;
-  const avgSpd=vehs.reduce((s,v)=>{const vt=VEH_TYPES[v.type];return s+(vt?vt.spd:1)},0)/vehs.length;
-  const rb=eff('respBonus');const db=eff('durBonus');
-  const prec=S.precincts.find(p=>p.id===vehs[0].precinctId);
-  const px=prec?.x??50,py=prec?.y??50;
+
+  const rb=eff('respBonus');
+  const db=eff('durBonus');
   const cx=call.x??50,cy=call.y??50;
-  const dist=Math.max(3,calcDist(px,py,cx,cy));
-  const trvTicks=Math.max(3,Math.round((dist*0.35/avgSpd)*(1+rb)));
-  const scnTicks=Math.max(10,Math.round(rnd(call.durMin,call.durMax)*(1+db)/avgSpd));
-  const retTicks=Math.max(3,Math.round(dist*0.35/avgSpd));
+
+  // Base scene duration for the call — shared progress pool all on-scene units drain together
+  const baseDur=rnd(call.durMin,call.durMax);
+
+  // Unit-count bonus: more units than minimum speeds up scene. Scales linearly min→max → 0%→40% faster.
+  const unitRange=Math.max(1,call.maxU-call.minU);
+  const extraUnits=Math.max(0,vehs.length-call.minU);
+  const unitBonus=0.40*(extraUnits/unitRange); // 0.0–0.40
+
+  // Total crew across all dispatched vehicles
+  const totalCrew=vehs.reduce((s,v)=>s+Math.max(1,v.officerIds.length),0);
+  // Crew bonus: each officer beyond the first in a vehicle adds 8% speed per officer, capped at 50%
+  const crewBonus=Math.min(0.50,Math.max(0,(totalCrew-vehs.length)*0.08));
+
+  // sceneTicks is the shared pool of work ticks needed on scene
+  const durMult=Math.max(0.25,1+db-unitBonus-crewBonus);
+  call.sceneTicks=Math.max(8,Math.round(baseDur*durMult));
+  call.sceneProgress=0; // ticks of work done so far
+
+  // Each vehicle gets its own travel time based on its own speed and its own precinct location
   vehs.forEach(v=>{
+    const vt=VEH_TYPES[v.type];
+    const spd=vt?.spd||1.0;
+    const prec=S.precincts.find(p=>p.id===v.precinctId);
+    const px=prec?.x??50,py=prec?.y??50;
+    const dist=Math.max(3,calcDist(px,py,cx,cy));
+    const trvTicks=Math.max(3,Math.round((dist*0.35/spd)*(1+rb)));
+    const retTicks=Math.max(3,Math.round(dist*0.35/spd));
     v.status='responding';v.callId=callId;v.phase='traveling';
-    v.travelTicks=trvTicks;v.sceneTicks=scnTicks;v.returnTicks=retTicks;v.phaseTick=0;
+    v.travelTicks=trvTicks;v.sceneTicks=0;v.returnTicks=retTicks;v.phaseTick=0;
     v.officerIds.forEach(oid=>{const o=S.officers.find(o=>o.id===oid);if(o)o.status='dispatched'});
   });
-  log('🚓',`${vehs.map(v=>v.name).join(', ')} dispatched to ${call.name} at ${call.loc}`,'#3b82f6');
+
+  // Build a readable bonus summary for the log
+  const bonusParts=[];
+  if(unitBonus>0)bonusParts.push(`+${Math.round(unitBonus*100)}% unit bonus`);
+  if(crewBonus>0)bonusParts.push(`+${Math.round(crewBonus*100)}% crew bonus`);
+  const bonusStr=bonusParts.length?` (${bonusParts.join(', ')})`:'';
+  log('🚓',`${vehs.map(v=>v.name).join(', ')} dispatched to ${call.name}${bonusStr}`,'#3b82f6');
   ui.refresh();return true;
 }
 
@@ -838,9 +866,11 @@ function completeCall(callId){
   S.money+=rew;addXp(xpEarned,call.assignedVehs);
   S.stats.done++;S.stats.earned+=rew;S.stats.todayEarned+=rew;
   call.status='completed';
+  // Vehicles already being sent to returning by the tick loop's scene-progress block;
+  // handle any that slipped through (e.g. still traveling when call resolves)
   call.assignedVehs.forEach(vid=>{
     const v=S.vehicles.find(v=>v.id===vid);
-    if(v){v.phase='returning';v.phaseTick=0;}
+    if(v&&v.phase!=='returning'&&v.phase!==null){v.phase='returning';v.phaseTick=0;}
   });
   S.rep=Math.min(100,S.rep+(call.pri===1?rnd(2,5):call.pri===2?rnd(1,3):rnd(0,1)));
   // Track rep history for stats chart
@@ -930,27 +960,43 @@ function tick(){
   S.calls.forEach(c=>{
     if(c.status==='waiting'){c.timeLeft=Math.max(0,c.timeLeft-1);if(c.timeLeft===0)failCall(c.id)}
   });
+  // Step 1: advance each vehicle's travel / returning phases independently
   S.vehicles.forEach(v=>{
-    if(v.status!=='available'&&v.phase){
-      v.phaseTick++;
-      if(v.phase==='traveling'&&v.phaseTick>=v.travelTicks){
-        v.phase='on_scene';v.status='on_scene';v.phaseTick=0;
-        const c=S.calls.find(c=>c.id===v.callId);
-        if(c)log('📍',`${v.name} arrived on scene at ${c.loc}`,'#f59e0b');
-      } else if(v.phase==='on_scene'&&v.phaseTick>=v.sceneTicks){
-        const c=S.calls.find(c=>c.id===v.callId);
-        if(c&&c.status==='responding')completeCall(c.id);
+    if(v.status==='available'||!v.phase)return;
+    v.phaseTick++;
+    if(v.phase==='traveling'&&v.phaseTick>=v.travelTicks){
+      v.phase='on_scene';v.status='on_scene';v.phaseTick=0;
+      const c=S.calls.find(c=>c.id===v.callId);
+      if(c)log('📍',`${v.name} arrived on scene at ${c.loc}`,'#f59e0b');
+    } else if(v.phase==='returning'&&v.phaseTick>=v.returnTicks){
+      v.status='available';v.callId=null;v.phase=null;v.phaseTick=0;
+      v.officerIds.forEach(oid=>{
+        const o=S.officers.find(o=>o.id===oid);
+        if(o)o.status='available';
+      });
+      const prec=S.precincts.find(p=>p.id===v.precinctId);
+      log('🏠',`${v.name} returned to ${prec?.name||'precinct'}`,'#64748b');
+    }
+  });
+
+  // Step 2: for each active call, accumulate scene progress from all on-scene vehicles this tick
+  // Each on-scene vehicle contributes 1 + (crewCount-1)*0.15 progress per tick (crew bonus per vehicle)
+  S.calls.forEach(c=>{
+    if(c.status!=='responding'||c.sceneTicks==null)return;
+    const onScene=S.vehicles.filter(v=>v.callId===c.id&&v.phase==='on_scene');
+    if(!onScene.length)return;
+    const progressThisTick=onScene.reduce((sum,v)=>{
+      const crew=Math.max(1,v.officerIds.length);
+      return sum+(1+(crew-1)*0.15);
+    },0);
+    if(c.sceneProgress==null)c.sceneProgress=0;
+    c.sceneProgress+=progressThisTick;
+    if(c.sceneProgress>=c.sceneTicks){
+      // All scene work done — resolve call and send everyone home
+      completeCall(c.id);
+      S.vehicles.filter(v=>v.callId===c.id&&v.phase==='on_scene').forEach(v=>{
         v.phase='returning';v.phaseTick=0;
-      } else if(v.phase==='returning'&&v.phaseTick>=v.returnTicks){
-        v.status='available';v.callId=null;v.phase=null;v.phaseTick=0;
-        // FIX: restore officer status when vehicle returns
-        v.officerIds.forEach(oid=>{
-          const o=S.officers.find(o=>o.id===oid);
-          if(o)o.status='available';
-        });
-        const prec=S.precincts.find(p=>p.id===v.precinctId);
-        log('🏠',`${v.name} returned to ${prec?.name||'precinct'}`,'#64748b');
-      }
+      });
     }
   });
 
@@ -1144,9 +1190,11 @@ function load(){
         if(p.x==null)p.x=i===0?50:Math.round(20+Math.random()*60);
         if(p.y==null)p.y=i===0?50:Math.round(20+Math.random()*60);
       });
-      // FIX: ensure all calls have map coords
+      // FIX: ensure all calls have map coords and new scene fields
       S.calls.forEach(c=>{
         if(c.x==null){const lc=LOC_COORDS[c.loc]||{x:50,y:50};c.x=lc.x;c.y=lc.y;}
+        if(c.sceneTicks==null&&c.status==='responding')c.sceneTicks=rnd(c.durMin||30,c.durMax||120);
+        if(c.sceneProgress==null)c.sceneProgress=0;
       });
       // FIX: ensure stats sub-objects exist
       if(!S.stats.byType)S.stats.byType={};
@@ -1465,6 +1513,11 @@ const ui = {
       return{name:p.name,dist:Math.round(d),avVehs};
     }).sort((a,b)=>a.dist-b.dist).slice(0,2);
     const nearStr=nearestPrec.map(p=>`${p.name} (${p.avVehs} avail)`).join(' • ');
+    // Show what bonuses will apply at different dispatch counts
+    const unitRange=Math.max(1,c.maxU-c.minU);
+    const maxBonus=40; // 40% at max units
+    const bonusHint=c.minU<c.maxU?`<span class="call-tag" style="color:var(--cyan-l)">⚡ +${maxBonus}% faster at max units</span>`:'';
+    const crewHint=`<span class="call-tag" style="color:var(--green-l)">👮 +15% per extra crew/veh</span>`;
     return `<div class="call-card ${pc}${hot?' urgent':''}">
       <div class="call-hdr">
         <span class="call-pri ${pc}">PRIORITY ${c.pri}</span>
@@ -1476,9 +1529,11 @@ const ui = {
         <div class="call-loc">📍 ${c.loc}</div>
         <div class="call-desc">${c.desc}</div>
         <div class="call-meta">
-          <span class="call-tag">👮 ${c.minU}${c.minU!==c.maxU?'-'+c.maxU:''} units</span>
-          <span class="call-tag">💰 ${$$(c.rewMin)}-${$$(c.rewMax)}</span>
-          <span class="call-tag">⭐ ${c.xpMin}-${c.xpMax} XP</span>
+          <span class="call-tag">👮 ${c.minU}${c.minU!==c.maxU?'–'+c.maxU:''} units</span>
+          <span class="call-tag">💰 ${$$(c.rewMin)}–${$$(c.rewMax)}</span>
+          <span class="call-tag">⭐ ${c.xpMin}–${c.xpMax} XP</span>
+          ${bonusHint}
+          ${crewHint}
         </div>
         ${nearStr?`<div style="font-size:9px;color:var(--t3);margin-bottom:5px;font-family:monospace">🏢 ${nearStr}</div>`:''}
         <div class="call-pbar"><div class="call-pfill" style="width:${pct}%;background:${bc}"></div></div>
@@ -1489,20 +1544,47 @@ const ui = {
 
   respCard(c){
     const pc=c.pri===1?'p1':c.pri===2?'p2':'p3';
+
+    // Scene progress bar (shared across all units)
+    const sceneTotal=c.sceneTicks||1;
+    const sceneDone=Math.min(sceneTotal,c.sceneProgress||0);
+    const scenePct=Math.round((sceneDone/sceneTotal)*100);
+    const onSceneVehs=S.vehicles.filter(v=>v.callId===c.id&&v.phase==='on_scene');
+    const onSceneCount=onSceneVehs.length;
+
     const vprog=c.assignedVehs.map(vid=>{
       const v=S.vehicles.find(v=>v.id===vid);if(!v)return'';
       const vt=VEH_TYPES[v.type];
       let pct=0,lbl='',bc='#3b82f6';
-      if(v.phase==='traveling'){pct=Math.min(100,(v.phaseTick/v.travelTicks)*100);lbl=`En Route ${fmtCD(v.travelTicks-v.phaseTick)}`;bc='#f59e0b'}
-      else if(v.phase==='on_scene'){pct=Math.min(100,(v.phaseTick/v.sceneTicks)*100);lbl=`On Scene ${fmtCD(v.sceneTicks-v.phaseTick)}`;bc='#3b82f6'}
-      else if(v.phase==='returning'){pct=Math.min(100,(v.phaseTick/v.returnTicks)*100);lbl='Returning';bc='#10b981'}
+      if(v.phase==='traveling'){
+        pct=Math.min(100,(v.phaseTick/Math.max(1,v.travelTicks))*100);
+        lbl=`En Route ${fmtCD(v.travelTicks-v.phaseTick)}`;bc='#f59e0b';
+      } else if(v.phase==='on_scene'){
+        pct=scenePct;lbl=`On Scene`;bc='#3b82f6';
+      } else if(v.phase==='returning'){
+        pct=Math.min(100,(v.phaseTick/Math.max(1,v.returnTicks))*100);
+        lbl='Returning';bc='#10b981';
+      }
+      const crew=v.officerIds.length;
+      const crewStr=crew>0?` • ${crew} crew`:'';
       return `<div class="resp-unit">
         <span style="font-size:17px">${vt?.icon||'🚗'}</span>
         <span style="font-size:11px;font-weight:700;min-width:55px">${v.name}</span>
         <div class="resp-bar"><div class="resp-fill" style="width:${pct}%;background:${bc}"></div></div>
-        <span class="resp-lbl">${lbl}</span>
+        <span class="resp-lbl">${lbl}${crewStr}</span>
       </div>`;
     }).join('');
+
+    const sceneBar=onSceneCount>0?`<div style="margin-top:8px;padding:6px 9px;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:5px">
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--t3);font-family:monospace;margin-bottom:4px">
+        <span>🔵 SCENE PROGRESS — ${onSceneCount} unit${onSceneCount!==1?'s':''} working</span>
+        <span>${scenePct}%</span>
+      </div>
+      <div style="height:5px;background:var(--bg2);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${scenePct}%;background:var(--blue);border-radius:3px;transition:width .8s linear"></div>
+      </div>
+    </div>`:'';
+
     return `<div class="call-card ${pc}" style="border-color:rgba(59,130,246,.35)">
       <div class="call-hdr">
         <span class="call-pri ${pc}">${c.pri===1?'P1':c.pri===2?'P2':'P3'}</span>
@@ -1513,6 +1595,7 @@ const ui = {
       <div class="call-bdy">
         <div class="call-loc">📍 ${c.loc}</div>
         <div style="margin-top:7px">${vprog}</div>
+        ${sceneBar}
       </div>
     </div>`;
   },
