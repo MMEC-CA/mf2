@@ -653,23 +653,156 @@ const SKILLS = [
   {id:'special_ops',      br:'expand',  tier:4,name:'Special Operations', icon:'🎯',desc:'Unlock mega-operation bonus calls',     cost:500000,xpCost:5000, req:['inter_agency'],      eff:{megaOps:true}},
 ];
 
-const EDU_PATHS = [
-  {id:'gle',      name:'General Law Enforcement',  icon:'📚', dept:null,             dur:60,  cred:'gle',      desc:'Core policing procedures and protocols'},
-  {id:'traffic',  name:'Traffic Unit',             icon:'🚦', dept:'traffic',        dur:90,  cred:'traffic',  desc:'Traffic enforcement and accident response'},
-  {id:'detective',name:'Detective Training',       icon:'🕵️', dept:'detectives',     dur:120, cred:'detective',desc:'Criminal investigation and undercover techniques'},
-  {id:'k9',       name:'K9 Handler',               icon:'🐕', dept:'k9',             dur:120, cred:'k9',       desc:'Canine search and apprehension handling'},
-  {id:'narcotics',name:'Narcotics Unit',           icon:'💊', dept:'narcotics',      dur:150, cred:'narcotics',desc:'Drug enforcement and covert raid procedures'},
-  {id:'gtf',      name:'Gang Task Force',          icon:'🎯', dept:'gang_task_force',dur:150, cred:'gtf',      desc:'Gang intelligence and counter-operations'},
-  {id:'swat',     name:'SWAT Operator',            icon:'⚡', dept:'swat',           dur:240, cred:'swat',     desc:'Tactical entry, hostage rescue, and heavy weapons'},
-  {id:'air',      name:'Air Support',              icon:'🚁', dept:'air_support',    dur:300, cred:'air',      desc:'Helicopter operations and aerial surveillance'},
+// ── SPECIALTY SKILL TREES ──────────────────────────────────────────────────
+// Each specialty is a branch an officer commits to. Nodes within a branch are
+// unlocked in order; req:[] lists sibling node IDs that must be owned first.
+// Officers can only hold one specialty. Switching costs all current credentials.
+//
+// dept: which department must be unlocked before the BRANCH is selectable.
+// vehs: vehicle types this node qualifies the officer to drive.
+// role: cosmetic role title shown on the officer card when this node is owned.
+// ──────────────────────────────────────────────────────────────────────────
+const EDU_SPECIALTIES = [
+  // ── PATROL (always available, no dept lock) ────────────────────────────
+  {
+    id:'patrol', name:'Patrol Division', icon:'🚓', dept:null,
+    nodes:[
+      {id:'patrol_basic',    name:'Basic Patrol',          icon:'📋', dur:60,  req:[],                         desc:'Standard law enforcement procedures and patrol techniques', role:'Patrol Officer'},
+      {id:'patrol_advanced', name:'Advanced Patrol',        icon:'🚓', dur:90,  req:['patrol_basic'],           desc:'High-speed pursuit certification and defensive tactics',    role:'Senior Patrol Officer', vehs:['cruiser','charger','suv','motorcycle','atv']},
+      {id:'patrol_firearms', name:'Firearms Certification', icon:'🔫', dur:80,  req:['patrol_basic'],           desc:'Advanced marksmanship and less-lethal weapons qualification', role:'Armed Officer'},
+      {id:'patrol_crowd',    name:'Crowd Control',          icon:'🛡️', dur:70,  req:['patrol_advanced'],        desc:'Riot control, mounted operations and public order training',  role:'Public Order Officer', vehs:['paddy_wagon','horse_unit']},
+      {id:'patrol_fto',      name:'Field Training Officer', icon:'⭐', dur:120, req:['patrol_advanced','patrol_firearms'], desc:'Certified to train new recruits on patrol — grants FTO role', role:'Field Training Officer'},
+    ],
+  },
+  // ── TRAFFIC ───────────────────────────────────────────────────────────
+  {
+    id:'traffic', name:'Traffic Division', icon:'🚦', dept:'traffic',
+    nodes:[
+      {id:'traffic_basic',   name:'Traffic Enforcement',   icon:'🚦', dur:80,  req:[],                         desc:'Traffic law, radar operation and roadside procedures',       role:'Traffic Officer',        vehs:['traffic_unit']},
+      {id:'traffic_pursuit', name:'Pursuit Driving',        icon:'🏎️', dur:100, req:['traffic_basic'],          desc:'Advanced vehicle pursuit and PIT maneuver certification',    role:'Pursuit Officer',        vehs:['charger','motorcycle']},
+      {id:'traffic_accident',name:'Accident Investigation', icon:'🔍', dur:90,  req:['traffic_basic'],          desc:'Forensic accident reconstruction and crash investigation',   role:'Accident Investigator'},
+      {id:'traffic_cdl',     name:'Commercial Vehicle',     icon:'🚌', dur:110, req:['traffic_pursuit'],        desc:'CDL certification for large vehicle and transport ops',      role:'Transport Officer',       vehs:['paddy_wagon']},
+      {id:'traffic_senior',  name:'Senior Traffic Officer', icon:'🌟', dur:130, req:['traffic_pursuit','traffic_accident'], desc:'Unit supervisor cert — manages traffic enforcement teams', role:'Traffic Sergeant'},
+    ],
+  },
+  // ── DETECTIVE ─────────────────────────────────────────────────────────
+  {
+    id:'detectives', name:'Detective Bureau', icon:'🕵️', dept:'detectives',
+    nodes:[
+      {id:'det_basic',      name:'Detective Fundamentals',  icon:'🕵️', dur:100, req:[],                        desc:'Criminal investigation, evidence handling and interviews',   role:'Detective',              vehs:['unmarked']},
+      {id:'det_surveillance',name:'Surveillance Operations',icon:'📷', dur:110, req:['det_basic'],              desc:'Fixed and mobile surveillance, counter-surveillance',        role:'Surveillance Detective',  vehs:['surveillance_van']},
+      {id:'det_cyber',      name:'Digital Forensics',       icon:'💻', dur:130, req:['det_basic'],              desc:'Computer forensics, data recovery and cyber crime',          role:'Cyber Detective'},
+      {id:'det_homicide',   name:'Homicide Investigation',  icon:'🔬', dur:150, req:['det_surveillance'],       desc:'Complex case management, forensic pathology liaison',        role:'Homicide Detective'},
+      {id:'det_senior',     name:'Lead Investigator',       icon:'🏅', dur:160, req:['det_homicide','det_cyber'],desc:'Case lead certification — oversees multi-detective files',   role:'Lead Investigator'},
+    ],
+  },
+  // ── K9 ────────────────────────────────────────────────────────────────
+  {
+    id:'k9', name:'K9 Unit', icon:'🐕', dept:'k9',
+    nodes:[
+      {id:'k9_handler',    name:'K9 Handler Basic',         icon:'🐕', dur:100, req:[],                         desc:'Dog handling, obedience and basic apprehension work',        role:'K9 Handler',             vehs:['k9_unit']},
+      {id:'k9_narco',      name:'K9 Narcotics Detection',   icon:'👃', dur:90,  req:['k9_handler'],             desc:'Training dogs for drug scent detection operations',          role:'K9 Narcotics Handler'},
+      {id:'k9_search',     name:'K9 Search & Rescue',       icon:'🔦', dur:90,  req:['k9_handler'],             desc:'Wilderness and urban search, cadaver and missing persons',   role:'K9 SAR Handler'},
+      {id:'k9_patrol',     name:'K9 Patrol Integration',    icon:'🚓', dur:110, req:['k9_narco','k9_search'],   desc:'K9 unit integration with patrol and vehicle pursuits',       role:'K9 Patrol Officer'},
+      {id:'k9_trainer',    name:'K9 Training Supervisor',   icon:'🎖️', dur:140, req:['k9_patrol'],              desc:'Certified to breed, select and train new K9 unit dogs',     role:'K9 Training Supervisor'},
+    ],
+  },
+  // ── SWAT ──────────────────────────────────────────────────────────────
+  {
+    id:'swat', name:'SWAT Team', icon:'⚡', dept:'swat',
+    nodes:[
+      {id:'swat_basic',    name:'SWAT Basic Training',      icon:'⚡', dur:180, req:[],                         desc:'Physical conditioning, weapon handling and entry tactics',   role:'SWAT Operator'},
+      {id:'swat_entry',    name:'Tactical Entry Officer',   icon:'🚪', dur:150, req:['swat_basic'],             desc:'Dynamic entry, room clearing and hostage rescue protocols', role:'Tactical Entry Officer'},
+      {id:'swat_van_cert', name:'SWAT Van Driver',          icon:'🚐', dur:100, req:['swat_basic'],             desc:'Armored transport driving and tactical positioning',         role:'SWAT Driver',             vehs:['swat_van']},
+      {id:'swat_armor',    name:'Armored Vehicle Operator', icon:'🛡️', dur:120, req:['swat_van_cert'],          desc:'MRAP and Bearcat operation in live tactical environments',   role:'APC Operator',            vehs:['armored','bearcat']},
+      {id:'swat_sniper',   name:'Sniper Qualification',     icon:'🎯', dur:160, req:['swat_entry'],             desc:'Long-range precision shooting and observation certification', role:'SWAT Sniper'},
+      {id:'swat_leader',   name:'Tactical Team Leader',     icon:'🏆', dur:200, req:['swat_entry','swat_armor','swat_sniper'], desc:'Command authority over SWAT elements — team leader role', role:'SWAT Team Leader'},
+    ],
+  },
+  // ── NARCOTICS ─────────────────────────────────────────────────────────
+  {
+    id:'narcotics', name:'Narcotics Unit', icon:'💊', dept:'narcotics',
+    nodes:[
+      {id:'narc_basic',   name:'Narcotics Fundamentals',    icon:'💊', dur:120, req:[],                         desc:'Drug identification, confidential informant handling',       role:'Narcotics Officer',      vehs:['narc_van']},
+      {id:'narc_undercover',name:'Undercover Operations',   icon:'🎭', dur:140, req:['narc_basic'],             desc:'Deep cover identity maintenance and buy-bust operations',    role:'UC Officer',             vehs:['unmarked']},
+      {id:'narc_intel',   name:'Drug Intelligence',         icon:'📡', dur:110, req:['narc_basic'],             desc:'Cartel mapping, financial tracing and network analysis',     role:'Drug Intelligence Analyst'},
+      {id:'narc_raid',    name:'Raid Coordination',         icon:'🚨', dur:130, req:['narc_undercover','narc_intel'], desc:'Multi-agency raid planning and entry team coordination', role:'Raid Coordinator'},
+      {id:'narc_senior',  name:'Senior Narcotics Agent',    icon:'🏅', dur:160, req:['narc_raid'],              desc:'Directs long-term narcotics investigations and task forces', role:'Senior Narcotics Agent'},
+    ],
+  },
+  // ── GANG TASK FORCE ───────────────────────────────────────────────────
+  {
+    id:'gang_task_force', name:'Gang Task Force', icon:'🎯', dept:'gang_task_force',
+    nodes:[
+      {id:'gtf_basic',    name:'Gang Intelligence Basics',  icon:'🎯', dur:120, req:[],                         desc:'Gang identification, hierarchy mapping and territory intel', role:'Gang Intelligence Officer'},
+      {id:'gtf_street',   name:'Street Operations',         icon:'🏘️', dur:110, req:['gtf_basic'],              desc:'Proactive street enforcement and gang suppression tactics',  role:'GTF Street Officer'},
+      {id:'gtf_intel',    name:'Gang Analytics',            icon:'📊', dur:130, req:['gtf_basic'],              desc:'Pattern analysis, criminal network mapping and forecasting', role:'GTF Analyst'},
+      {id:'gtf_interop',  name:'Inter-Agency Liaison',      icon:'🤝', dur:120, req:['gtf_street','gtf_intel'], desc:'FBI, DEA and state police coordination certification',       role:'GTF Liaison'},
+      {id:'gtf_senior',   name:'GTF Team Commander',        icon:'🏆', dur:170, req:['gtf_interop'],            desc:'Commands Gang Task Force operations and raids',              role:'GTF Commander'},
+    ],
+  },
+  // ── AIR SUPPORT ───────────────────────────────────────────────────────
+  {
+    id:'air_support', name:'Air Support Unit', icon:'🚁', dept:'air_support',
+    nodes:[
+      {id:'air_drone',    name:'Drone Operator',            icon:'🤖', dur:110, req:[],                         desc:'Certified UAV operator — aerial surveillance and mapping',   role:'Drone Operator',         vehs:['drone_unit']},
+      {id:'air_observer', name:'Air Observer',              icon:'👁️', dur:120, req:['air_drone'],              desc:'Airborne tactical observer and radio relay certification',   role:'Air Observer'},
+      {id:'air_helo',     name:'Helicopter Crew',           icon:'🚁', dur:200, req:['air_observer'],           desc:'Police helicopter crewing, hoist rescue and night ops',     role:'Helicopter Crew',        vehs:['helicopter']},
+      {id:'air_pilot',    name:'Helicopter Pilot',          icon:'🎖️', dur:300, req:['air_helo'],              desc:'Full PPL(H) with law enforcement endorsement',               role:'Police Pilot',            vehs:['helicopter']},
+      {id:'air_commander',name:'Air Operations Commander',  icon:'🏆', dur:180, req:['air_pilot','air_observer'],desc:'Commands all air support assets and coordinates with ground', role:'Air Operations Commander'},
+    ],
+  },
 ];
 
+// Flat lookup: nodeId → node object (for quick access anywhere)
+const EDU_NODE_MAP = {};
+EDU_SPECIALTIES.forEach(sp=>sp.nodes.forEach(n=>{EDU_NODE_MAP[n.id]={...n,specialty:sp.id,specialtyName:sp.name,specialtyIcon:sp.icon,dept:sp.dept}}));
+
+// Vehicle → required node ID (officer must own this node to crew that vehicle)
 const VEH_CRED_REQ = {
-  k9_unit:'k9', traffic_unit:'traffic', unmarked:'detective',
-  surveillance_van:'detective', narc_van:'narcotics',
-  swat_van:'swat', armored:'swat', bearcat:'swat',
-  helicopter:'air', drone_unit:'air',
+  traffic_unit:    'traffic_basic',
+  charger:         'traffic_pursuit',   // pursuit driving cert also qualifies
+  k9_unit:         'k9_handler',
+  unmarked:        'det_basic',
+  surveillance_van:'det_surveillance',
+  narc_van:        'narc_basic',
+  swat_van:        'swat_van_cert',
+  armored:         'swat_armor',
+  bearcat:         'swat_armor',
+  helicopter:      'air_helo',
+  drone_unit:      'air_drone',
 };
+
+// Helper: get the specialty an officer currently belongs to (or null)
+function offSpecialty(o){
+  const creds=o.credentials||[];
+  for(const sp of EDU_SPECIALTIES){
+    if(creds.some(c=>sp.nodes.find(n=>n.id===c)))return sp;
+  }
+  return null;
+}
+
+// Helper: get available next nodes for an officer (same specialty only, prereqs met)
+function offAvailNodes(o){
+  const creds=o.credentials||[];
+  const sp=offSpecialty(o);
+  const nodes=sp?sp.nodes:EDU_SPECIALTIES.flatMap(s=>s.nodes.filter(n=>n.req.length===0));
+  return nodes.filter(n=>
+    !creds.includes(n.id) &&
+    n.req.every(r=>creds.includes(r)) &&
+    (!EDU_NODE_MAP[n.id]?.dept||hasDept(EDU_NODE_MAP[n.id].dept)) &&
+    (!sp||sp.nodes.find(nd=>nd.id===n.id)) // must be in same specialty
+  );
+}
+
+// Helper: get the role title for display (highest-tier node that has a role)
+function offRole(o){
+  const creds=o.credentials||[];
+  const sp=offSpecialty(o);
+  if(!sp)return null;
+  const roleNode=[...sp.nodes].reverse().find(n=>creds.includes(n.id)&&n.role);
+  return roleNode?.role||null;
+}
 
 const OFF_NAMES = [
   'James Wilson','Sarah Connor','Mike Johnson','Emma Davis','Carlos Rodriguez',
@@ -689,8 +822,8 @@ let S = {
   day:1, gameTime:480, tick:0,
   precincts:[{id:'prec_1',name:'Precinct 1',tier:'small',district:'Downtown Core',vehicleIds:['veh_1'],officerIds:['off_1','off_2'],x:50,y:50}],
   officers:[
-    {id:'off_1',name:'James Wilson',rank:'officer',status:'available',vehicleId:'veh_1',xp:0,emo:'👮',precinctId:'prec_1',credentials:['gle'],education:null},
-    {id:'off_2',name:'Sarah Connor',rank:'officer',status:'available',vehicleId:'veh_1',xp:0,emo:'👮‍♀️',precinctId:'prec_1',credentials:['gle'],education:null},
+    {id:'off_1',name:'James Wilson',rank:'officer',status:'available',vehicleId:'veh_1',xp:0,emo:'👮',precinctId:'prec_1',credentials:[],education:null},
+    {id:'off_2',name:'Sarah Connor',rank:'officer',status:'available',vehicleId:'veh_1',xp:0,emo:'👮‍♀️',precinctId:'prec_1',credentials:[],education:null},
   ],
   vehicles:[{id:'veh_1',name:'Unit 1',type:'cruiser',precinctId:'prec_1',officerIds:['off_1','off_2'],status:'available',callId:null,phase:null,phaseTick:0,travelTicks:0,sceneTicks:0,returnTicks:0}],
   calls:[],callCtr:1,vehCtr:2,offCtr:3,precCtr:2,
@@ -811,14 +944,15 @@ function dispatch(callId,vehIds){
   // Base scene duration for the call — shared progress pool all on-scene units drain together
   const baseDur=rnd(call.durMin,call.durMax);
 
-  // Unit-count bonus: more units than minimum speeds up scene. Scales linearly min→max → 0%→40% faster.
-  const unitRange=Math.max(1,call.maxU-call.minU);
-  const extraUnits=Math.max(0,vehs.length-call.minU);
-  const unitBonus=0.40*(extraUnits/unitRange); // 0.0–0.40
-
-  // Total crew across all dispatched vehicles
+  // Total officers across all dispatched vehicles (officers count as "units")
   const totalCrew=vehs.reduce((s,v)=>s+Math.max(1,v.officerIds.length),0);
-  // Crew bonus: each officer beyond the first in a vehicle adds 8% speed per officer, capped at 50%
+
+  // Unit-count bonus: more officers than minimum speeds up scene. Scales linearly min→max → 0%→40% faster.
+  const unitRange=Math.max(1,call.maxU-call.minU);
+  const extraUnits=Math.max(0,totalCrew-call.minU);
+  const unitBonus=Math.min(0.40,0.40*(extraUnits/unitRange));
+
+  // Crew bonus: each officer beyond the first in a vehicle adds 8% drain rate, capped at 50% total
   const crewBonus=Math.min(0.50,Math.max(0,(totalCrew-vehs.length)*0.08));
 
   // sceneTicks is the shared pool of work ticks needed on scene
@@ -1000,18 +1134,18 @@ function tick(){
     }
   });
 
-  // Process education timers — FIX: only tick when officer is available (not dispatched)
+  // Process education timers — only tick when officer is available (not dispatched)
   S.officers.forEach(o=>{
     if(o.education&&o.status==='available'){
       o.education.ticksLeft=Math.max(0,o.education.ticksLeft-1);
       if(o.education.ticksLeft===0){
-        const path=EDU_PATHS.find(p=>p.id===o.education.path);
-        if(path&&!(o.credentials||[]).includes(path.cred)){
+        const node=EDU_NODE_MAP[o.education.path];
+        if(node&&!(o.credentials||[]).includes(node.id)){
           if(!o.credentials)o.credentials=[];
-          o.credentials.push(path.cred);
+          o.credentials.push(node.id);
         }
-        log('🎓',`${o.name} completed ${path?.name||'training'} — earned ${path?.cred||'credential'}!`,'#10b981');
-        ui.toast(`🎓 ${o.name} certified: ${path?.name||'Training'}!`,'success');
+        log('🎓',`${o.name} completed ${node?.name||o.education.path}!`,'#10b981');
+        ui.toast(`🎓 ${o.name} certified: ${node?.name||'Training'}!`,'success');
         o.education=null;
       }
     }
@@ -1109,7 +1243,7 @@ function hireOfficer(rankId,precId){
   const id='o'+(S.offCtr++);
   const usedNames=S.officers.map(o=>o.name);
   const nm=pick(OFF_NAMES.filter(n=>!usedNames.includes(n)))||`Officer ${S.offCtr}`;
-  S.officers.push({id,name:nm,rank:rankId,status:'available',vehicleId:null,xp:rk.xpReq,emo:pick(OFF_EMO),precinctId:precId,credentials:['gle'],education:null});
+  S.officers.push({id,name:nm,rank:rankId,status:'available',vehicleId:null,xp:rk.xpReq,emo:pick(OFF_EMO),precinctId:precId,credentials:[],education:null});
   prec.officerIds.push(id);
   log('👮',`Hired ${nm} as ${rk.name} at ${prec.name} for ${$$(cost)}`,'#60a5fa');
   ui.toast(`✅ ${nm} joined ${prec.name}!`,'success');
@@ -1176,10 +1310,14 @@ function load(){
           if(!c){v.status='available';v.callId=null;v.phase=null;v.phaseTick=0;}
         }
       });
-      // FIX: fix officers stuck as dispatched when their vehicle is back
+      // Migrate officers: strip any credentials that aren't valid node IDs (old format used strings like 'gle','swat')
       S.officers.forEach(o=>{
-        if(!o.credentials)o.credentials=['gle'];
+        if(!o.credentials)o.credentials=[];
+        // Keep only node IDs that exist in the new system
+        o.credentials=o.credentials.filter(c=>EDU_NODE_MAP[c]);
         if(!('education' in o))o.education=null;
+        // If education path references old format, clear it
+        if(o.education&&!EDU_NODE_MAP[o.education.path])o.education=null;
         if(o.status==='dispatched'){
           const v=S.vehicles.find(v=>v.officerIds.includes(o.id));
           if(!v||v.status==='available')o.status='available';
@@ -1529,7 +1667,7 @@ const ui = {
         <div class="call-loc">📍 ${c.loc}</div>
         <div class="call-desc">${c.desc}</div>
         <div class="call-meta">
-          <span class="call-tag">👮 ${c.minU}${c.minU!==c.maxU?'–'+c.maxU:''} units</span>
+          <span class="call-tag">👮 ${c.minU}${c.minU!==c.maxU?'–'+c.maxU:''} officers</span>
           <span class="call-tag">💰 ${$$(c.rewMin)}–${$$(c.rewMax)}</span>
           <span class="call-tag">⭐ ${c.xpMin}–${c.xpMax} XP</span>
           ${bonusHint}
@@ -1912,12 +2050,17 @@ const ui = {
     const rk=RANKS.find(r=>r.id===o.rank);
     const creds=o.credentials||[];
     const edu=o.education;
-    const path=edu?EDU_PATHS.find(p=>p.id===edu.path):null;
+    const sp=offSpecialty(o);
+    const role=offRole(o);
+    const nodeInProgress=edu?EDU_NODE_MAP[edu.path]:null;
     const pct=edu?Math.max(0,Math.min(100,(1-edu.ticksLeft/edu.totalTicks)*100)):0;
     const canEnroll=!edu&&o.status==='available';
+
+    // Credential badges
     const credBadges=creds.length
-      ?creds.map(c=>{const p=EDU_PATHS.find(ep=>ep.cred===c);return`<span style="font-size:8px;padding:2px 5px;border-radius:3px;background:rgba(59,130,246,.15);color:var(--blue-l);border:1px solid rgba(59,130,246,.2);font-family:monospace;white-space:nowrap">${p?.icon||'📜'} ${p?.name||c}</span>`}).join('')
-      :`<span style="font-size:9px;color:var(--t3)">No credentials</span>`;
+      ?creds.map(nid=>{const n=EDU_NODE_MAP[nid];return n?`<span style="font-size:8px;padding:2px 5px;border-radius:3px;background:rgba(59,130,246,.15);color:var(--blue-l);border:1px solid rgba(59,130,246,.2);font-family:monospace;white-space:nowrap">${n.icon} ${n.name}</span>`:''}).join('')
+      :`<span style="font-size:9px;color:var(--t3)">No specialty</span>`;
+
     return `<div class="off-card">
       <div class="off-hdr">
         <div class="off-ava">${o.emo}</div>
@@ -1926,15 +2069,16 @@ const ui = {
           <span class="off-rank-bdg" style="background:${rk?.col||'#94a3b8'}25;color:${rk?.col||'#94a3b8'};border:1px solid ${rk?.col||'#94a3b8'}40">${rk?.icon||''} ${rk?.name||o.rank}</span>
         </div>
       </div>
+      ${sp?`<div style="font-size:8px;color:var(--gold-l);margin-bottom:4px;font-family:monospace">${sp.icon} ${sp.name}${role?` • ${role}`:''}</div>`:''}
       <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:7px">${credBadges}</div>
       ${edu?`
-        <div style="font-size:9px;color:var(--gold-l);margin-bottom:4px;font-family:monospace">🎓 ${path?.name||edu.path}</div>
+        <div style="font-size:9px;color:var(--gold-l);margin-bottom:4px;font-family:monospace">🎓 ${nodeInProgress?.name||edu.path}</div>
         <div style="height:4px;background:var(--bg2);border-radius:2px;overflow:hidden;margin-bottom:4px"><div style="height:100%;width:${pct.toFixed(1)}%;background:var(--blue);border-radius:2px;transition:width 1s linear"></div></div>
         <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--t3);margin-bottom:6px"><span>${Math.round(pct)}% complete</span><span>⏱️ ${fmtCD(edu.ticksLeft)}</span></div>
         <button class="btn btn-danger btn-xs w-full" onclick="G.actions.cancelEdu('${o.id}')">Cancel Training</button>
       `:`
         <div style="font-size:9px;color:var(--t3);margin-bottom:5px">${o.status!=='available'?'🚓 Unavailable while dispatched':'Ready for training'}</div>
-        <button class="btn btn-primary btn-sm w-full" ${!canEnroll?'disabled':''} onclick="G.ui.openEduPathModal('${o.id}')">🎓 Enroll in Training</button>
+        <button class="btn btn-primary btn-sm w-full" ${!canEnroll?'disabled':''} onclick="G.ui.openEduPathModal('${o.id}')">🎓 ${sp?'Continue Training':'Choose Specialty'}</button>
       `}
     </div>`;
   },
@@ -2012,37 +2156,99 @@ const ui = {
     `;
   },
 
-  // ── EDU PATH MODAL ──
+  // ── EDU PATH MODAL — now shows per-officer specialty skill tree ──
   openEduPathModal(offId){
     const o=S.officers.find(o=>o.id===offId);if(!o)return;
     const creds=o.credentials||[];
-    const paths=EDU_PATHS.filter(p=>(!p.dept||hasDept(p.dept))&&!creds.includes(p.cred));
+    const sp=offSpecialty(o);
     document.getElementById('modal-title').textContent=`Training — ${o.name}`;
     document.getElementById('modal-overlay').classList.add('open');
-    document.getElementById('modal-body').innerHTML=`
-      <div style="display:flex;align-items:center;gap:9px;padding:10px;background:var(--bg2);border-radius:6px;margin-bottom:14px">
-        <span style="font-size:28px">${o.emo}</span>
-        <div>
-          <div style="font-size:13px;font-weight:700">${o.name}</div>
-          <div style="font-size:10px;color:var(--t3)">${RANKS.find(r=>r.id===o.rank)?.name||o.rank} • ${creds.length} credential${creds.length!==1?'s':''}</div>
-        </div>
+    this._renderEduModal(offId);
+  },
+
+  _renderEduModal(offId){
+    const o=S.officers.find(o=>o.id===offId);if(!o)return;
+    const creds=o.credentials||[];
+    const sp=offSpecialty(o);
+    const rk=RANKS.find(r=>r.id===o.rank);
+    const role=offRole(o);
+    const availNodes=offAvailNodes(o);
+
+    // Header
+    let html=`<div style="display:flex;align-items:center;gap:9px;padding:10px;background:var(--bg2);border-radius:6px;margin-bottom:14px">
+      <span style="font-size:28px">${o.emo}</span>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700">${o.name}</div>
+        <div style="font-size:10px;color:var(--t3)">${rk?.name||o.rank}${role?` • <span style="color:var(--cyan-l)">${role}</span>`:''}</div>
+        ${sp?`<div style="font-size:9px;color:var(--gold-l);margin-top:2px">${sp.icon} ${sp.name} specialist — ${creds.length} certification${creds.length!==1?'s':''}</div>`:'<div style="font-size:9px;color:var(--t3);margin-top:2px">No specialty yet — choose a career path below</div>'}
       </div>
-      ${paths.length===0
-        ?`<div class="empty-state"><span class="empty-icon">🎓</span><div class="empty-title">All Available Paths Complete</div><div class="empty-desc">Unlock more departments to access additional training</div></div>`
-        :`<div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;text-transform:uppercase;margin-bottom:9px">Available Training Paths</div>
-        <div class="disp-unit-list">`+paths.map(p=>`
-          <div class="disp-unit" onclick="G.actions.startEdu('${offId}','${p.id}')">
-            <span style="font-size:24px">${p.icon}</span>
-            <div style="flex:1">
-              <div style="font-size:12px;font-weight:700">${p.name}</div>
-              <div style="font-size:10px;color:var(--t3)">${p.desc}</div>
-              <div style="font-size:9px;color:var(--cyan-l);margin-top:2px">⏱️ Duration: ${fmtCD(p.dur)}</div>
-            </div>
-            <span style="font-size:10px;color:var(--blue-l)">Enroll →</span>
-          </div>`).join('')+'</div>'
+      ${sp?`<button class="btn btn-danger btn-xs" onclick="G.actions.forfeitSpecialty('${offId}')" title="Forfeit all credentials and switch specialty">↩ Forfeit</button>`:''}
+    </div>`;
+
+    if(sp){
+      // Show the current specialty tree
+      html+=`<div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;text-transform:uppercase;margin-bottom:10px">${sp.icon} ${sp.name} Certification Tree</div>`;
+      html+=`<div style="display:flex;flex-direction:column;gap:6px">`;
+      sp.nodes.forEach(n=>{
+        const owned=creds.includes(n.id);
+        const prereqMet=n.req.every(r=>creds.includes(r));
+        const deptOk=!n.dept||hasDept(n.dept);
+        const isNext=availNodes.find(an=>an.id===n.id);
+        const depthPx=n.req.length*16;
+        let bg='var(--bg2)',border='var(--border)',textCol='var(--t3)',btnHtml='';
+        if(owned){bg='rgba(5,150,105,.08)';border='rgba(5,150,105,.3)';textCol='var(--t1)';}
+        else if(isNext&&deptOk){bg='rgba(59,130,246,.06)';border='rgba(59,130,246,.3)';textCol='var(--t1)';
+          btnHtml=`<button class="btn btn-primary btn-xs" onclick="G.actions.startEdu('${offId}','${n.id}')">Enroll (${fmtCD(n.dur)})</button>`;}
+        else if(!deptOk){btnHtml=`<span style="font-size:9px;color:var(--red-l)">🔒 Dept. locked</span>`;}
+        else{btnHtml=`<span style="font-size:9px;color:var(--t3)">🔒 Complete prerequisites</span>`;}
+        const vehStr=n.vehs?.length?`<span style="font-size:8px;color:var(--cyan-l);font-family:monospace"> • Unlocks: ${n.vehs.map(v=>VEH_TYPES[v]?.icon||v).join(' ')}</span>`:'';
+        const roleStr=n.role?`<span style="font-size:8px;color:var(--gold-l)"> → ${n.role}</span>`:'';
+        html+=`<div style="margin-left:${depthPx}px;padding:8px 11px;background:${bg};border:1px solid ${border};border-radius:6px;display:flex;align-items:center;gap:9px">
+          <span style="font-size:18px;opacity:${owned?1:prereqMet?0.9:0.4}">${n.icon}</span>
+          <div style="flex:1">
+            <div style="font-size:11px;font-weight:700;color:${textCol}">${owned?'✅ ':''} ${n.name}${roleStr}${vehStr}</div>
+            <div style="font-size:9px;color:var(--t3);margin-top:1px">${n.desc}</div>
+            ${n.req.length?`<div style="font-size:8px;color:var(--t3);margin-top:1px">Requires: ${n.req.map(r=>EDU_NODE_MAP[r]?.name||r).join(', ')}</div>`:''}
+          </div>
+          ${btnHtml}
+        </div>`;
+      });
+      html+=`</div>`;
+
+      // Show other specialties as locked/forfeit-to-switch
+      const others=EDU_SPECIALTIES.filter(s=>s.id!==sp.id&&(!s.dept||hasDept(s.dept)));
+      if(others.length){
+        html+=`<div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;text-transform:uppercase;margin:14px 0 8px">Other Specialties (requires forfeiting ${sp.name})</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${others.map(s=>`<div style="padding:5px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;opacity:.45;font-size:10px;color:var(--t3)">${s.icon} ${s.name}</div>`).join('')}
+        </div>`;
       }
-    `;
-    document.getElementById('modal-ftr').innerHTML=`<button class="btn btn-ghost" onclick="G.ui.closeModal()">Skip for now</button>`;
+    } else {
+      // No specialty yet — show all available entry points grouped by specialty
+      html+=`<div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;text-transform:uppercase;margin-bottom:10px">Choose a Career Specialty</div>`;
+      const available=EDU_SPECIALTIES.filter(s=>!s.dept||hasDept(s.dept));
+      const locked=EDU_SPECIALTIES.filter(s=>s.dept&&!hasDept(s.dept));
+      html+=`<div style="display:flex;flex-direction:column;gap:8px">`;
+      available.forEach(s=>{
+        const entry=s.nodes.find(n=>n.req.length===0);
+        html+=`<div class="disp-unit" onclick="G.actions.startEdu('${offId}','${entry.id}')">
+          <span style="font-size:22px">${s.icon}</span>
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:700">${s.name}</div>
+            <div style="font-size:10px;color:var(--t3)">Entry: ${entry.name} — ${fmtCD(entry.dur)}</div>
+            <div style="font-size:9px;color:var(--t3)">${entry.desc}</div>
+          </div>
+          <span style="font-size:10px;color:var(--blue-l)">Enroll →</span>
+        </div>`;
+      });
+      if(locked.length){
+        html+=`<div style="font-size:9px;color:var(--t3);margin-top:4px;padding:0 2px">🔒 ${locked.map(s=>s.icon+' '+s.name).join(', ')} — unlock departments first</div>`;
+      }
+      html+=`</div>`;
+    }
+
+    document.getElementById('modal-body').innerHTML=html;
+    document.getElementById('modal-ftr').innerHTML=`<button class="btn btn-ghost" onclick="G.ui.closeModal()">Close</button>`;
   },
 
   // ── DISPATCH MODAL ──
@@ -2096,7 +2302,7 @@ const ui = {
           <div style="font-size:11px;color:var(--t3);margin-bottom:5px">📍 ${c.loc}</div>
           <div style="font-size:11px;color:var(--t2)">${c.desc}</div>
           <div style="display:flex;gap:8px;margin-top:7px;flex-wrap:wrap">
-            <span class="call-tag">👮 Need ${c.minU}-${c.maxU} units</span>
+            <span class="call-tag">👮 ${c.minU}–${c.maxU} officers needed</span>
             <span class="call-tag">💰 ${$$(c.rewMin)}-${$$(c.rewMax)}</span>
             <span class="call-tag">⏱️ ${fmtCD(c.timeLeft)} remaining</span>
           </div>
@@ -2107,9 +2313,12 @@ const ui = {
         `<div class="disp-unit-list">${unitListHtml}</div>`
       }
     `;
-    const canDisp=sel.length>=c.minU;
+    const selOfficerCount=sel.reduce((s,vid)=>{const v=S.vehicles.find(v=>v.id===vid);return s+Math.max(1,v?.officerIds?.length||0)},0);
+    const canDisp=selOfficerCount>=c.minU;
     document.getElementById('modal-ftr').innerHTML=`
-      <div style="flex:1;font-size:11px;color:${canDisp?'var(--green-l)':'var(--t3)'}">${sel.length} unit${sel.length!==1?'s':''} selected (min: ${c.minU})</div>
+      <div style="flex:1;font-size:11px;color:${canDisp?'var(--green-l)':'var(--t3)'}">
+        ${selOfficerCount} officer${selOfficerCount!==1?'s':''} selected (min: ${c.minU}, max: ${c.maxU})
+      </div>
       <button class="btn btn-ghost" onclick="G.ui.closeModal()">Cancel</button>
       <button class="btn btn-primary" onclick="G.ui._confDisp('${callId}')" ${!canDisp?'disabled':''}>🚓 Dispatch</button>
     `;
@@ -2119,8 +2328,16 @@ const ui = {
     if(!this.dispSel[callId])this.dispSel[callId]=[];
     const c=S.calls.find(c=>c.id===callId);if(!c)return;
     const idx=this.dispSel[callId].indexOf(vehId);
-    if(idx>=0)this.dispSel[callId].splice(idx,1);
-    else if(this.dispSel[callId].length<c.maxU)this.dispSel[callId].push(vehId);
+    if(idx>=0){
+      this.dispSel[callId].splice(idx,1);
+    } else {
+      // Count officers in currently selected vehicles + this vehicle
+      const curOfficers=this.dispSel[callId].reduce((s,vid)=>{const v=S.vehicles.find(v=>v.id===vid);return s+Math.max(1,v?.officerIds?.length||0)},0);
+      const newVeh=S.vehicles.find(v=>v.id===vehId);
+      const newOfficers=Math.max(1,newVeh?.officerIds?.length||0);
+      if(curOfficers+newOfficers<=c.maxU)this.dispSel[callId].push(vehId);
+      else ui.toast(`⛔ Max ${c.maxU} officers for this call`,'warning');
+    }
     this._renderDispModal(callId);
   },
 
@@ -2135,13 +2352,13 @@ const ui = {
     const vt=VEH_TYPES[v.type];const cap=vt?.cap||2;
     const assigned=S.officers.filter(o=>v.officerIds.includes(o.id));
     const credReq=VEH_CRED_REQ[v.type];
-    const credPath=credReq?EDU_PATHS.find(p=>p.cred===credReq):null;
+    const credNode=credReq?EDU_NODE_MAP[credReq]:null;
     const precOffs=S.officers.filter(o=>o.precinctId===v.precinctId&&!v.officerIds.includes(o.id)&&o.status==='available');
     const unassigned=credReq?precOffs.filter(o=>(o.credentials||[]).includes(credReq)):precOffs;
     const unqualified=credReq?precOffs.filter(o=>!(o.credentials||[]).includes(credReq)):[];
     document.getElementById('modal-title').textContent=`Crew — ${v.name}`;
     document.getElementById('modal-body').innerHTML=`
-      <div style="font-size:12px;color:var(--t3);margin-bottom:12px">Capacity: ${assigned.length}/${cap}${credPath?` &nbsp;•&nbsp; <span style="color:var(--gold-l)">${credPath.icon} Requires ${credPath.name}</span>`:''}
+      <div style="font-size:12px;color:var(--t3);margin-bottom:12px">Capacity: ${assigned.length}/${cap}${credNode?` &nbsp;•&nbsp; <span style="color:var(--gold-l)">${credNode.icon} Requires ${credNode.name}</span>`:''}
       </div>
       ${assigned.length?`<div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;margin-bottom:7px">ASSIGNED CREW</div>`+
         assigned.map(o=>{const rk=RANKS.find(r=>r.id===o.rank);return`<div style="display:flex;align-items:center;gap:8px;padding:7px;background:var(--bg2);border-radius:5px;margin-bottom:5px">
@@ -2159,7 +2376,7 @@ const ui = {
       ${unqualified.length?`<div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;margin:10px 0 7px">MISSING CREDENTIALS (${unqualified.length})</div>`+
         unqualified.map(o=>{const rk=RANKS.find(r=>r.id===o.rank);return`<div style="display:flex;align-items:center;gap:8px;padding:7px;background:var(--bg2);border-radius:5px;margin-bottom:5px;opacity:.45">
           <span style="font-size:20px">${o.emo}</span>
-          <div style="flex:1"><div style="font-size:12px;font-weight:700">${o.name}</div><div style="font-size:9px;color:var(--red-l)">🔒 Needs ${credPath?.name||credReq} certification</div></div>
+          <div style="flex:1"><div style="font-size:12px;font-weight:700">${o.name}</div><div style="font-size:9px;color:var(--red-l)">🔒 Needs ${credNode?.name||credReq} certification</div></div>
         </div>`}).join(''):''}
       ${assigned.length>=cap?`<div style="font-size:11px;color:var(--t3);margin-top:8px">Crew full — remove someone to add another</div>`:''}
     `;
@@ -2188,9 +2405,9 @@ const ui = {
         </div>`}).join(''):''}
       ${!avVehs.length&&!lockedVehs.length?`<div style="color:var(--t3);font-size:11px">No available vehicles in this precinct</div>`:''}
       ${lockedVehs.length?`<div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;margin:10px 0 7px">REQUIRES CREDENTIALS</div>`+
-        lockedVehs.map(v=>{const vt=VEH_TYPES[v.type];const cp=EDU_PATHS.find(p=>p.cred===VEH_CRED_REQ[v.type]);return`<div style="display:flex;align-items:center;gap:9px;padding:9px 11px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;margin-bottom:5px;opacity:.45">
+        lockedVehs.map(v=>{const vt=VEH_TYPES[v.type];const cn=EDU_NODE_MAP[VEH_CRED_REQ[v.type]];return`<div style="display:flex;align-items:center;gap:9px;padding:9px 11px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;margin-bottom:5px;opacity:.45">
           <span style="font-size:22px">${vt?.icon||'🚗'}</span>
-          <div style="flex:1"><div style="font-size:12px;font-weight:700">${v.name}</div><div style="font-size:10px;color:var(--red-l)">🔒 Needs ${cp?.name||VEH_CRED_REQ[v.type]}</div></div>
+          <div style="flex:1"><div style="font-size:12px;font-weight:700">${v.name}</div><div style="font-size:10px;color:var(--red-l)">🔒 Needs ${cn?.name||VEH_CRED_REQ[v.type]}</div></div>
         </div>`}).join(''):''}
     `;
     document.getElementById('modal-ftr').innerHTML=`<button class="btn btn-ghost" onclick="G.ui.closeModal()">Close</button>`;
@@ -2294,8 +2511,8 @@ const actions = {
     if(!v||!o)return;
     const credReq=VEH_CRED_REQ[v.type];
     if(credReq&&!(o.credentials||[]).includes(credReq)){
-      const path=EDU_PATHS.find(p=>p.cred===credReq);
-      ui.toast(`⛔ ${o.name} needs ${path?.name||credReq} certification`,'error');
+      const credNode=EDU_NODE_MAP[credReq];
+      ui.toast(`⛔ ${o.name} needs ${credNode?.name||credReq} certification`,'error');
       return;
     }
     // FIX: remove from all other vehicles first
@@ -2328,15 +2545,33 @@ const actions = {
     ui.renderFleet();
   },
 
-  startEdu(offId,pathId){
+  startEdu(offId,nodeId){
     const o=S.officers.find(o=>o.id===offId);
-    const path=EDU_PATHS.find(p=>p.id===pathId);
-    if(!o||!path)return;
+    const node=EDU_NODE_MAP[nodeId];
+    if(!o||!node)return;
     if(o.education){ui.toast('⛔ Already enrolled in training','error');return}
     if(o.status!=='available'){ui.toast('⛔ Officer must be available to start training','error');return}
-    o.education={path:pathId,ticksLeft:path.dur,totalTicks:path.dur};
-    log('🎓',`${o.name} enrolled in ${path.name}`,'#3b82f6');
-    ui.toast(`🎓 ${o.name} enrolled in ${path.name}`,'info');
+    // Enforce specialty lock — if officer already has a specialty, node must be in same specialty
+    const sp=offSpecialty(o);
+    if(sp&&node.specialty!==sp.id){
+      ui.toast(`⛔ ${o.name} is a ${sp.name} specialist — forfeit credentials to switch`,'error');
+      return;
+    }
+    // Check prereqs
+    const creds=o.credentials||[];
+    if(!node.req.every(r=>creds.includes(r))){
+      const missing=node.req.filter(r=>!creds.includes(r)).map(r=>EDU_NODE_MAP[r]?.name||r).join(', ');
+      ui.toast(`⛔ Requires: ${missing}`,'error');
+      return;
+    }
+    // Check dept lock
+    if(node.dept&&!hasDept(node.dept)){
+      ui.toast(`⛔ Requires ${DEPTS.find(d=>d.id===node.dept)?.name||node.dept} department`,'error');
+      return;
+    }
+    o.education={path:nodeId,ticksLeft:node.dur,totalTicks:node.dur};
+    log('🎓',`${o.name} enrolled in ${node.name}`,'#3b82f6');
+    ui.toast(`🎓 ${o.name} → ${node.name}`,'info');
     ui.closeModal();
     ui.refresh();
   },
@@ -2344,10 +2579,34 @@ const actions = {
   cancelEdu(offId){
     const o=S.officers.find(o=>o.id===offId);
     if(!o||!o.education)return;
-    const path=EDU_PATHS.find(p=>p.id===o.education.path);
-    log('🚫',`${o.name} withdrew from ${path?.name||'training'}`,'#94a3b8');
+    const node=EDU_NODE_MAP[o.education.path];
+    log('🚫',`${o.name} withdrew from ${node?.name||'training'}`,'#94a3b8');
     ui.toast(`Training cancelled for ${o.name}`,'info');
     o.education=null;
+    ui.refresh();
+  },
+
+  forfeitSpecialty(offId){
+    const o=S.officers.find(o=>o.id===offId);
+    if(!o)return;
+    const sp=offSpecialty(o);
+    if(!sp){ui.toast('No specialty to forfeit','info');return}
+    if(!confirm(`Forfeit ALL of ${o.name}'s ${sp.name} credentials? This cannot be undone.`))return;
+    // Cancel any in-progress training
+    if(o.education)o.education=null;
+    // Remove from any vehicles that require credentials this officer is about to lose
+    S.vehicles.forEach(v=>{
+      if(!v.officerIds.includes(offId))return;
+      const req=VEH_CRED_REQ[v.type];
+      if(req&&(o.credentials||[]).includes(req)){
+        v.officerIds=v.officerIds.filter(id=>id!==offId);
+        ui.toast(`${o.name} removed from ${v.name} (credential lost)`,'warning');
+      }
+    });
+    o.credentials=[];
+    log('↩',`${o.name} forfeited all ${sp.name} credentials`,'#94a3b8');
+    ui.toast(`${o.name} is now unspecialized — ready for new specialty`,'warning');
+    ui.closeModal();
     ui.refresh();
   },
 
