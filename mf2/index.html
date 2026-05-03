@@ -1825,6 +1825,7 @@ const ui = {
             <div style="display:flex;gap:5px">
               <button class="btn btn-ghost btn-sm" style="flex:1" onclick="G.ui.openAssignVehModal('${v.id}')">👮 Crew</button>
               <button class="btn btn-ghost btn-sm" onclick="G.ui.openRenameModal('veh','${v.id}')">✏️</button>
+              <button class="btn btn-danger btn-sm" onclick="G.actions.sellVeh('${v.id}')" ${v.status!=='available'?'disabled':''} title="Sell for ${$$(Math.floor((VEH_TYPES[v.type]?.cost||0)*0.5))} (50%)">💰</button>
             </div>
           </div>`;
         }).join('')+'</div>');
@@ -2649,6 +2650,56 @@ const actions = {
     log('↩',`${o.name} forfeited all ${sp.name} credentials`,'#94a3b8');
     ui.toast(`${o.name} is now unspecialized — ready for new specialty`,'warning');
     ui.closeModal();
+    ui.refresh();
+  },
+
+  // Recall all units from a responding call — call returns to waiting with reduced timer
+  cancelDispatch(callId){
+    const c=S.calls.find(c=>c.id===callId);
+    if(!c||c.status!=='responding')return;
+    // Recall all assigned vehicles
+    c.assignedVehs.forEach(vid=>{
+      const v=S.vehicles.find(v=>v.id===vid);
+      if(!v)return;
+      v.phase='returning';v.phaseTick=0;
+      v.officerIds.forEach(oid=>{
+        const o=S.officers.find(o=>o.id===oid);
+        // Officers will go available once vehicle returns (handled in tick)
+      });
+    });
+    // Reset call to waiting with a reduced timer (partial timeout consumed)
+    c.status='waiting';
+    c.assignedVehs=[];
+    c.sceneProgress=0;
+    // Penalise timer — 30% already burned for the distraction
+    c.timeLeft=Math.max(15,Math.floor(c.timeLeft*0.70));
+    log('↩',`Units recalled from ${c.name} — call back to queue (${fmtCD(c.timeLeft)} remaining)`,'#d97706');
+    ui.toast(`↩ Units recalled — ${c.name} back in queue`,'warning');
+    ui.refresh();
+  },
+
+  sellVeh(vehId){
+    const v=S.vehicles.find(v=>v.id===vehId);
+    if(!v)return;
+    if(v.status!=='available'){ui.toast('⛔ Can only sell available vehicles','error');return}
+    const vt=VEH_TYPES[v.type];
+    const salePrice=Math.floor((vt?.cost||0)*0.50); // 50% resale value
+    if(!confirm(`Sell ${v.name} (${vt?.name}) for ${$$(salePrice)}?`))return;
+    // Unassign all officers
+    v.officerIds.forEach(oid=>{
+      const o=S.officers.find(o=>o.id===oid);
+      if(o)o.vehicleId=null;
+    });
+    // Remove from precinct vehicle list
+    S.precincts.forEach(p=>{
+      const i=p.vehicleIds.indexOf(vehId);
+      if(i>=0)p.vehicleIds.splice(i,1);
+    });
+    // Remove from fleet
+    S.vehicles=S.vehicles.filter(vv=>vv.id!==vehId);
+    S.money+=salePrice;
+    log('💰',`Sold ${vt?.name||v.name} for ${$$(salePrice)}`,'#d97706');
+    ui.toast(`💰 Sold for ${$$(salePrice)}`,'success');
     ui.refresh();
   },
 
