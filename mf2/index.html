@@ -667,89 +667,90 @@ const EDU_SPECIALTIES = [
   {
     id:'patrol', name:'Patrol Division', icon:'🚓', dept:null,
     nodes:[
-      {id:'patrol_basic',    name:'Basic Patrol',          icon:'📋', dur:60,  req:[],                         desc:'Standard law enforcement procedures and patrol techniques', role:'Patrol Officer'},
-      {id:'patrol_advanced', name:'Advanced Patrol',        icon:'🚓', dur:90,  req:['patrol_basic'],           desc:'High-speed pursuit certification and defensive tactics',    role:'Senior Patrol Officer', vehs:['cruiser','charger','suv','motorcycle','atv']},
-      {id:'patrol_firearms', name:'Firearms Certification', icon:'🔫', dur:80,  req:['patrol_basic'],           desc:'Advanced marksmanship and less-lethal weapons qualification', role:'Armed Officer'},
-      {id:'patrol_crowd',    name:'Crowd Control',          icon:'🛡️', dur:70,  req:['patrol_advanced'],        desc:'Riot control, mounted operations and public order training',  role:'Public Order Officer', vehs:['paddy_wagon','horse_unit']},
-      {id:'patrol_fto',      name:'Field Training Officer', icon:'⭐', dur:120, req:['patrol_advanced','patrol_firearms'], desc:'Certified to train new recruits on patrol — grants FTO role', role:'Field Training Officer'},
+      {id:'patrol_basic',    name:'Basic Patrol',          icon:'📋', dur:60,  req:[],                                    desc:'Standard law enforcement, radio procedures and first response', role:'Patrol Officer',         combatWeight:0.5},
+      {id:'patrol_driving',  name:'Patrol Vehicle Cert.',  icon:'🚓', dur:50,  req:['patrol_basic'],                      desc:'Standard cruiser, SUV, bicycle, motorcycle and ATV certification', role:'Patrol Driver',         combatWeight:0.4, vehs:['cruiser','suv','bicycle','motorcycle','atv']},
+      {id:'patrol_advanced', name:'Advanced Patrol',        icon:'🏎️', dur:90,  req:['patrol_driving'],                   desc:'High-speed pursuit driving and defensive tactics',              role:'Senior Patrol Officer',  combatWeight:0.7},
+      {id:'patrol_firearms', name:'Firearms Certification', icon:'🔫', dur:80,  req:['patrol_basic'],                     desc:'Advanced marksmanship and less-lethal weapons qualification',   role:'Armed Officer',           combatWeight:1.2},
+      {id:'patrol_crowd',    name:'Crowd Control',          icon:'🛡️', dur:70,  req:['patrol_advanced'],                  desc:'Riot control, mounted operations and public order training',    role:'Public Order Officer',    combatWeight:0.8, vehs:['paddy_wagon','horse_unit']},
+      {id:'patrol_fto',      name:'Field Training Officer', icon:'⭐', dur:120, req:['patrol_advanced','patrol_firearms'], desc:'Certified to mentor new recruits and lead patrol teams',        role:'Field Training Officer',  combatWeight:1.0},
     ],
   },
   // ── TRAFFIC ───────────────────────────────────────────────────────────
   {
     id:'traffic', name:'Traffic Division', icon:'🚦', dept:'traffic',
     nodes:[
-      {id:'traffic_basic',   name:'Traffic Enforcement',   icon:'🚦', dur:80,  req:[],                         desc:'Traffic law, radar operation and roadside procedures',       role:'Traffic Officer',        vehs:['traffic_unit']},
-      {id:'traffic_pursuit', name:'Pursuit Driving',        icon:'🏎️', dur:100, req:['traffic_basic'],          desc:'Advanced vehicle pursuit and PIT maneuver certification',    role:'Pursuit Officer',        vehs:['charger','motorcycle']},
-      {id:'traffic_accident',name:'Accident Investigation', icon:'🔍', dur:90,  req:['traffic_basic'],          desc:'Forensic accident reconstruction and crash investigation',   role:'Accident Investigator'},
-      {id:'traffic_cdl',     name:'Commercial Vehicle',     icon:'🚌', dur:110, req:['traffic_pursuit'],        desc:'CDL certification for large vehicle and transport ops',      role:'Transport Officer',       vehs:['paddy_wagon']},
-      {id:'traffic_senior',  name:'Senior Traffic Officer', icon:'🌟', dur:130, req:['traffic_pursuit','traffic_accident'], desc:'Unit supervisor cert — manages traffic enforcement teams', role:'Traffic Sergeant'},
+      {id:'traffic_basic',   name:'Traffic Enforcement',   icon:'🚦', dur:80,  req:[],                                    desc:'Traffic law, radar operation and roadside procedures',          role:'Traffic Officer',         combatWeight:0.4, vehs:['traffic_unit','cruiser']},
+      {id:'traffic_pursuit', name:'Pursuit Driving',        icon:'🏎️', dur:100, req:['traffic_basic'],                   desc:'Advanced vehicle pursuit and PIT maneuver certification',       role:'Pursuit Officer',         combatWeight:0.6, vehs:['charger','motorcycle']},
+      {id:'traffic_accident',name:'Accident Investigation', icon:'🔍', dur:90,  req:['traffic_basic'],                    desc:'Forensic accident reconstruction and crash investigation',      role:'Accident Investigator',   combatWeight:0.3},
+      {id:'traffic_cdl',     name:'Commercial Vehicle',     icon:'🚌', dur:110, req:['traffic_pursuit'],                  desc:'CDL certification for large vehicle and transport ops',         role:'Transport Officer',        combatWeight:0.3, vehs:['paddy_wagon','command_unit']},
+      {id:'traffic_senior',  name:'Senior Traffic Officer', icon:'🌟', dur:130, req:['traffic_pursuit','traffic_accident'],desc:'Unit supervisor cert — manages traffic enforcement teams',      role:'Traffic Sergeant',         combatWeight:0.7},
     ],
   },
   // ── DETECTIVE ─────────────────────────────────────────────────────────
   {
     id:'detectives', name:'Detective Bureau', icon:'🕵️', dept:'detectives',
     nodes:[
-      {id:'det_basic',      name:'Detective Fundamentals',  icon:'🕵️', dur:100, req:[],                        desc:'Criminal investigation, evidence handling and interviews',   role:'Detective',              vehs:['unmarked']},
-      {id:'det_surveillance',name:'Surveillance Operations',icon:'📷', dur:110, req:['det_basic'],              desc:'Fixed and mobile surveillance, counter-surveillance',        role:'Surveillance Detective',  vehs:['surveillance_van']},
-      {id:'det_cyber',      name:'Digital Forensics',       icon:'💻', dur:130, req:['det_basic'],              desc:'Computer forensics, data recovery and cyber crime',          role:'Cyber Detective'},
-      {id:'det_homicide',   name:'Homicide Investigation',  icon:'🔬', dur:150, req:['det_surveillance'],       desc:'Complex case management, forensic pathology liaison',        role:'Homicide Detective'},
-      {id:'det_senior',     name:'Lead Investigator',       icon:'🏅', dur:160, req:['det_homicide','det_cyber'],desc:'Case lead certification — oversees multi-detective files',   role:'Lead Investigator'},
+      {id:'det_basic',       name:'Detective Fundamentals', icon:'🕵️', dur:100, req:[],                                  desc:'Criminal investigation, evidence handling and interviews',      role:'Detective',               combatWeight:0.5, vehs:['unmarked']},
+      {id:'det_surveillance',name:'Surveillance Operations',icon:'📷', dur:110, req:['det_basic'],                        desc:'Fixed and mobile surveillance, counter-surveillance',           role:'Surveillance Detective',  combatWeight:0.3, vehs:['surveillance_van']},
+      {id:'det_cyber',       name:'Digital Forensics',      icon:'💻', dur:130, req:['det_basic'],                        desc:'Computer forensics, data recovery and cyber crime',             role:'Cyber Detective',         combatWeight:0.2},
+      {id:'det_homicide',    name:'Homicide Investigation', icon:'🔬', dur:150, req:['det_surveillance'],                 desc:'Complex case management, forensic pathology liaison',           role:'Homicide Detective',      combatWeight:0.6},
+      {id:'det_senior',      name:'Lead Investigator',      icon:'🏅', dur:160, req:['det_homicide','det_cyber'],         desc:'Case lead certification — oversees multi-detective files',      role:'Lead Investigator',       combatWeight:0.8},
     ],
   },
   // ── K9 ────────────────────────────────────────────────────────────────
   {
     id:'k9', name:'K9 Unit', icon:'🐕', dept:'k9',
     nodes:[
-      {id:'k9_handler',    name:'K9 Handler Basic',         icon:'🐕', dur:100, req:[],                         desc:'Dog handling, obedience and basic apprehension work',        role:'K9 Handler',             vehs:['k9_unit']},
-      {id:'k9_narco',      name:'K9 Narcotics Detection',   icon:'👃', dur:90,  req:['k9_handler'],             desc:'Training dogs for drug scent detection operations',          role:'K9 Narcotics Handler'},
-      {id:'k9_search',     name:'K9 Search & Rescue',       icon:'🔦', dur:90,  req:['k9_handler'],             desc:'Wilderness and urban search, cadaver and missing persons',   role:'K9 SAR Handler'},
-      {id:'k9_patrol',     name:'K9 Patrol Integration',    icon:'🚓', dur:110, req:['k9_narco','k9_search'],   desc:'K9 unit integration with patrol and vehicle pursuits',       role:'K9 Patrol Officer'},
-      {id:'k9_trainer',    name:'K9 Training Supervisor',   icon:'🎖️', dur:140, req:['k9_patrol'],              desc:'Certified to breed, select and train new K9 unit dogs',     role:'K9 Training Supervisor'},
+      {id:'k9_handler',  name:'K9 Handler Basic',       icon:'🐕', dur:100, req:[],                       desc:'Dog handling, obedience and basic apprehension work',            role:'K9 Handler',              combatWeight:0.8, vehs:['k9_unit']},
+      {id:'k9_narco',    name:'K9 Narcotics Detection', icon:'👃', dur:90,  req:['k9_handler'],           desc:'Training dogs for drug scent detection operations',              role:'K9 Narcotics Handler',    combatWeight:0.6},
+      {id:'k9_search',   name:'K9 Search & Rescue',     icon:'🔦', dur:90,  req:['k9_handler'],           desc:'Wilderness and urban search, cadaver and missing persons',       role:'K9 SAR Handler',          combatWeight:0.5},
+      {id:'k9_patrol',   name:'K9 Patrol Integration',  icon:'🚓', dur:110, req:['k9_narco','k9_search'], desc:'K9 unit integration with patrol and vehicle pursuits',           role:'K9 Patrol Officer',       combatWeight:1.0},
+      {id:'k9_trainer',  name:'K9 Training Supervisor', icon:'🎖️', dur:140, req:['k9_patrol'],            desc:'Certified to breed, select and train new K9 unit dogs',         role:'K9 Training Supervisor',  combatWeight:0.8},
     ],
   },
   // ── SWAT ──────────────────────────────────────────────────────────────
   {
     id:'swat', name:'SWAT Team', icon:'⚡', dept:'swat',
     nodes:[
-      {id:'swat_basic',    name:'SWAT Basic Training',      icon:'⚡', dur:180, req:[],                         desc:'Physical conditioning, weapon handling and entry tactics',   role:'SWAT Operator'},
-      {id:'swat_entry',    name:'Tactical Entry Officer',   icon:'🚪', dur:150, req:['swat_basic'],             desc:'Dynamic entry, room clearing and hostage rescue protocols', role:'Tactical Entry Officer'},
-      {id:'swat_van_cert', name:'SWAT Van Driver',          icon:'🚐', dur:100, req:['swat_basic'],             desc:'Armored transport driving and tactical positioning',         role:'SWAT Driver',             vehs:['swat_van']},
-      {id:'swat_armor',    name:'Armored Vehicle Operator', icon:'🛡️', dur:120, req:['swat_van_cert'],          desc:'MRAP and Bearcat operation in live tactical environments',   role:'APC Operator',            vehs:['armored','bearcat']},
-      {id:'swat_sniper',   name:'Sniper Qualification',     icon:'🎯', dur:160, req:['swat_entry'],             desc:'Long-range precision shooting and observation certification', role:'SWAT Sniper'},
-      {id:'swat_leader',   name:'Tactical Team Leader',     icon:'🏆', dur:200, req:['swat_entry','swat_armor','swat_sniper'], desc:'Command authority over SWAT elements — team leader role', role:'SWAT Team Leader'},
+      {id:'swat_basic',    name:'SWAT Basic Training',      icon:'⚡', dur:180, req:[],                                          desc:'Physical conditioning, weapon handling and entry tactics',   role:'SWAT Operator',          combatWeight:1.5},
+      {id:'swat_entry',    name:'Tactical Entry Officer',   icon:'🚪', dur:150, req:['swat_basic'],                              desc:'Dynamic entry, room clearing and hostage rescue protocols', role:'Tactical Entry Officer',  combatWeight:2.0},
+      {id:'swat_van_cert', name:'SWAT Van Driver',          icon:'🚐', dur:100, req:['swat_basic'],                              desc:'Armored transport driving and tactical positioning',         role:'SWAT Driver',             combatWeight:0.8, vehs:['swat_van']},
+      {id:'swat_armor',    name:'Armored Vehicle Operator', icon:'🛡️', dur:120, req:['swat_van_cert'],                           desc:'MRAP and Bearcat operation in live tactical environments',   role:'APC Operator',            combatWeight:0.9, vehs:['armored','bearcat']},
+      {id:'swat_sniper',   name:'Sniper Qualification',     icon:'🎯', dur:160, req:['swat_entry'],                              desc:'Long-range precision shooting and observation certification', role:'SWAT Sniper',             combatWeight:2.8},
+      {id:'swat_leader',   name:'Tactical Team Leader',     icon:'🏆', dur:200, req:['swat_entry','swat_armor','swat_sniper'],   desc:'Command authority over SWAT elements — team leader role',   role:'SWAT Team Leader',        combatWeight:3.0},
     ],
   },
   // ── NARCOTICS ─────────────────────────────────────────────────────────
   {
     id:'narcotics', name:'Narcotics Unit', icon:'💊', dept:'narcotics',
     nodes:[
-      {id:'narc_basic',   name:'Narcotics Fundamentals',    icon:'💊', dur:120, req:[],                         desc:'Drug identification, confidential informant handling',       role:'Narcotics Officer',      vehs:['narc_van']},
-      {id:'narc_undercover',name:'Undercover Operations',   icon:'🎭', dur:140, req:['narc_basic'],             desc:'Deep cover identity maintenance and buy-bust operations',    role:'UC Officer',             vehs:['unmarked']},
-      {id:'narc_intel',   name:'Drug Intelligence',         icon:'📡', dur:110, req:['narc_basic'],             desc:'Cartel mapping, financial tracing and network analysis',     role:'Drug Intelligence Analyst'},
-      {id:'narc_raid',    name:'Raid Coordination',         icon:'🚨', dur:130, req:['narc_undercover','narc_intel'], desc:'Multi-agency raid planning and entry team coordination', role:'Raid Coordinator'},
-      {id:'narc_senior',  name:'Senior Narcotics Agent',    icon:'🏅', dur:160, req:['narc_raid'],              desc:'Directs long-term narcotics investigations and task forces', role:'Senior Narcotics Agent'},
+      {id:'narc_basic',     name:'Narcotics Fundamentals', icon:'💊', dur:120, req:[],                                   desc:'Drug identification, confidential informant handling',          role:'Narcotics Officer',       combatWeight:0.6, vehs:['narc_van']},
+      {id:'narc_undercover',name:'Undercover Operations',  icon:'🎭', dur:140, req:['narc_basic'],                       desc:'Deep cover identity maintenance and buy-bust operations',       role:'UC Officer',              combatWeight:0.8, vehs:['unmarked']},
+      {id:'narc_intel',     name:'Drug Intelligence',      icon:'📡', dur:110, req:['narc_basic'],                       desc:'Cartel mapping, financial tracing and network analysis',        role:'Drug Intelligence Analyst',combatWeight:0.4},
+      {id:'narc_raid',      name:'Raid Coordination',      icon:'🚨', dur:130, req:['narc_undercover','narc_intel'],     desc:'Multi-agency raid planning and entry team coordination',        role:'Raid Coordinator',        combatWeight:1.2},
+      {id:'narc_senior',    name:'Senior Narcotics Agent', icon:'🏅', dur:160, req:['narc_raid'],                        desc:'Directs long-term narcotics investigations and task forces',    role:'Senior Narcotics Agent',  combatWeight:1.5},
     ],
   },
   // ── GANG TASK FORCE ───────────────────────────────────────────────────
   {
     id:'gang_task_force', name:'Gang Task Force', icon:'🎯', dept:'gang_task_force',
     nodes:[
-      {id:'gtf_basic',    name:'Gang Intelligence Basics',  icon:'🎯', dur:120, req:[],                         desc:'Gang identification, hierarchy mapping and territory intel', role:'Gang Intelligence Officer'},
-      {id:'gtf_street',   name:'Street Operations',         icon:'🏘️', dur:110, req:['gtf_basic'],              desc:'Proactive street enforcement and gang suppression tactics',  role:'GTF Street Officer'},
-      {id:'gtf_intel',    name:'Gang Analytics',            icon:'📊', dur:130, req:['gtf_basic'],              desc:'Pattern analysis, criminal network mapping and forecasting', role:'GTF Analyst'},
-      {id:'gtf_interop',  name:'Inter-Agency Liaison',      icon:'🤝', dur:120, req:['gtf_street','gtf_intel'], desc:'FBI, DEA and state police coordination certification',       role:'GTF Liaison'},
-      {id:'gtf_senior',   name:'GTF Team Commander',        icon:'🏆', dur:170, req:['gtf_interop'],            desc:'Commands Gang Task Force operations and raids',              role:'GTF Commander'},
+      {id:'gtf_basic',   name:'Gang Intelligence Basics', icon:'🎯', dur:120, req:[],                               desc:'Gang identification, hierarchy mapping and territory intel',    role:'Gang Intelligence Officer',combatWeight:0.5},
+      {id:'gtf_street',  name:'Street Operations',        icon:'🏘️', dur:110, req:['gtf_basic'],                   desc:'Proactive street enforcement and gang suppression tactics',     role:'GTF Street Officer',       combatWeight:1.0},
+      {id:'gtf_intel',   name:'Gang Analytics',           icon:'📊', dur:130, req:['gtf_basic'],                   desc:'Pattern analysis, criminal network mapping and forecasting',    role:'GTF Analyst',             combatWeight:0.3},
+      {id:'gtf_interop', name:'Inter-Agency Liaison',     icon:'🤝', dur:120, req:['gtf_street','gtf_intel'],      desc:'FBI, DEA and state police coordination certification',          role:'GTF Liaison',             combatWeight:0.7},
+      {id:'gtf_senior',  name:'GTF Team Commander',       icon:'🏆', dur:170, req:['gtf_interop'],                 desc:'Commands Gang Task Force operations and raids',                 role:'GTF Commander',           combatWeight:1.4},
     ],
   },
   // ── AIR SUPPORT ───────────────────────────────────────────────────────
   {
     id:'air_support', name:'Air Support Unit', icon:'🚁', dept:'air_support',
     nodes:[
-      {id:'air_drone',    name:'Drone Operator',            icon:'🤖', dur:110, req:[],                         desc:'Certified UAV operator — aerial surveillance and mapping',   role:'Drone Operator',         vehs:['drone_unit']},
-      {id:'air_observer', name:'Air Observer',              icon:'👁️', dur:120, req:['air_drone'],              desc:'Airborne tactical observer and radio relay certification',   role:'Air Observer'},
-      {id:'air_helo',     name:'Helicopter Crew',           icon:'🚁', dur:200, req:['air_observer'],           desc:'Police helicopter crewing, hoist rescue and night ops',     role:'Helicopter Crew',        vehs:['helicopter']},
-      {id:'air_pilot',    name:'Helicopter Pilot',          icon:'🎖️', dur:300, req:['air_helo'],              desc:'Full PPL(H) with law enforcement endorsement',               role:'Police Pilot',            vehs:['helicopter']},
-      {id:'air_commander',name:'Air Operations Commander',  icon:'🏆', dur:180, req:['air_pilot','air_observer'],desc:'Commands all air support assets and coordinates with ground', role:'Air Operations Commander'},
+      {id:'air_drone',    name:'Drone Operator',           icon:'🤖', dur:110, req:[],                                   desc:'Certified UAV operator — aerial surveillance and mapping',    role:'Drone Operator',          combatWeight:0.5, vehs:['drone_unit']},
+      {id:'air_observer', name:'Air Observer',             icon:'👁️', dur:120, req:['air_drone'],                        desc:'Airborne tactical observer and radio relay certification',    role:'Air Observer',            combatWeight:0.4},
+      {id:'air_helo',     name:'Helicopter Crew',          icon:'🚁', dur:200, req:['air_observer'],                     desc:'Police helicopter crewing, hoist rescue and night ops',      role:'Helicopter Crew',         combatWeight:0.6, vehs:['helicopter']},
+      {id:'air_pilot',    name:'Helicopter Pilot',         icon:'🎖️', dur:300, req:['air_helo'],                         desc:'Full PPL(H) with law enforcement endorsement',               role:'Police Pilot',            combatWeight:0.7, vehs:['helicopter']},
+      {id:'air_commander',name:'Air Operations Commander', icon:'🏆', dur:180, req:['air_pilot','air_observer'],         desc:'Commands all air support assets and coordinates with ground', role:'Air Operations Commander', combatWeight:0.9},
     ],
   },
 ];
@@ -760,18 +761,56 @@ EDU_SPECIALTIES.forEach(sp=>sp.nodes.forEach(n=>{EDU_NODE_MAP[n.id]={...n,specia
 
 // Vehicle → required node ID (officer must own this node to crew that vehicle)
 const VEH_CRED_REQ = {
+  // Standard patrol — require patrol_driving
+  cruiser:         'patrol_driving',
+  suv:             'patrol_driving',
+  bicycle:         'patrol_driving',
+  motorcycle:      'patrol_driving',
+  atv:             'patrol_driving',
+  paddy_wagon:     'patrol_crowd',    // crowd control cert includes transport duty
+  horse_unit:      'patrol_crowd',
+  command_unit:    'traffic_cdl',     // large vehicle — CDL or equivalent
+  // Traffic
   traffic_unit:    'traffic_basic',
-  charger:         'traffic_pursuit',   // pursuit driving cert also qualifies
-  k9_unit:         'k9_handler',
+  charger:         'traffic_pursuit',
+  // Detective
   unmarked:        'det_basic',
   surveillance_van:'det_surveillance',
+  // Narcotics
   narc_van:        'narc_basic',
+  // SWAT
   swat_van:        'swat_van_cert',
   armored:         'swat_armor',
   bearcat:         'swat_armor',
+  // Air
   helicopter:      'air_helo',
   drone_unit:      'air_drone',
 };
+
+// SWAT-only vehicles — non-SWAT officers can't board these at all
+const VEH_SWAT_ONLY = new Set(['swat_van','armored','bearcat']);
+
+// Helper: is officer SWAT-specialized?
+function isSwat(o){return offSpecialty(o)?.id==='swat';}
+
+// Helper: can officer board a vehicle? Returns null if ok, string reason if not.
+function canBoard(o,v){
+  const sp=offSpecialty(o);
+  // SWAT officers cannot board non-SWAT vehicles (they'd crowd out patrol officers and it makes no sense operationally)
+  if(sp?.id==='swat'&&!VEH_SWAT_ONLY.has(v.type)&&v.type!=='k9_unit'){
+    return `SWAT operators can only ride in SWAT vehicles`;
+  }
+  // Non-SWAT officers cannot board SWAT-only vehicles
+  if(VEH_SWAT_ONLY.has(v.type)&&sp?.id!=='swat'){
+    return `Only SWAT-certified officers can board this vehicle`;
+  }
+  const req=VEH_CRED_REQ[v.type];
+  if(req&&!(o.credentials||[]).includes(req)){
+    const node=EDU_NODE_MAP[req];
+    return `Requires ${node?.name||req} certification`;
+  }
+  return null;
+}
 
 // Helper: get the specialty an officer currently belongs to (or null)
 function offSpecialty(o){
@@ -1113,20 +1152,31 @@ function tick(){
     }
   });
 
-  // Step 2: for each active call, accumulate scene progress from all on-scene vehicles this tick
-  // Each on-scene vehicle contributes 1 + (crewCount-1)*0.15 progress per tick (crew bonus per vehicle)
+  // Step 2: for each active call, accumulate scene progress from all on-scene vehicles this tick.
+  // Each officer contributes their combat weight — tactical/weapons-trained officers drain much faster.
+  // A base of 0.3 per officer is given to anyone with no specialty, so uncredentialed crew still help minimally.
   S.calls.forEach(c=>{
     if(c.status!=='responding'||c.sceneTicks==null)return;
     const onScene=S.vehicles.filter(v=>v.callId===c.id&&v.phase==='on_scene');
     if(!onScene.length)return;
     const progressThisTick=onScene.reduce((sum,v)=>{
-      const crew=Math.max(1,v.officerIds.length);
-      return sum+(1+(crew-1)*0.15);
+      if(!v.officerIds.length)return sum+0.5; // empty vehicle still contributes presence
+      return sum+v.officerIds.reduce((s,oid)=>{
+        const o=S.officers.find(o=>o.id===oid);
+        if(!o)return s+0.3;
+        const creds=o.credentials||[];
+        const sp=offSpecialty(o);
+        if(!sp)return s+0.3; // no specialty — minimal contribution
+        // Sum combatWeight of all owned nodes in their specialty
+        const weight=sp.nodes
+          .filter(n=>creds.includes(n.id))
+          .reduce((w,n)=>w+(n.combatWeight||0.3),0);
+        return s+Math.max(0.3,weight);
+      },0);
     },0);
     if(c.sceneProgress==null)c.sceneProgress=0;
     c.sceneProgress+=progressThisTick;
     if(c.sceneProgress>=c.sceneTicks){
-      // All scene work done — resolve call and send everyone home
       completeCall(c.id);
       S.vehicles.filter(v=>v.callId===c.id&&v.phase==='on_scene').forEach(v=>{
         v.phase='returning';v.phaseTick=0;
@@ -1729,6 +1779,7 @@ const ui = {
         <span class="call-icon-big">${c.icon}</span>
         <span class="call-name">${c.name}</span>
         <span style="font-size:9px;color:var(--gold-l);font-family:monospace;letter-spacing:1px">RESPONDING</span>
+        <button class="btn btn-danger btn-xs" style="margin-left:auto" onclick="G.actions.cancelDispatch('${c.id}')" title="Recall all units — call goes back to waiting">↩ Recall</button>
       </div>
       <div class="call-bdy">
         <div class="call-loc">📍 ${c.loc}</div>
@@ -2346,37 +2397,38 @@ const ui = {
     if(dispatch(callId,ids)){this.closeModal();this.tab('dispatch')}
   },
 
-  // ── ASSIGN VEH MODAL ──
   openAssignVehModal(vehId){
     const v=S.vehicles.find(v=>v.id===vehId);if(!v)return;
     const vt=VEH_TYPES[v.type];const cap=vt?.cap||2;
     const assigned=S.officers.filter(o=>v.officerIds.includes(o.id));
     const credReq=VEH_CRED_REQ[v.type];
     const credNode=credReq?EDU_NODE_MAP[credReq]:null;
+    const isSwatVeh=VEH_SWAT_ONLY.has(v.type);
     const precOffs=S.officers.filter(o=>o.precinctId===v.precinctId&&!v.officerIds.includes(o.id)&&o.status==='available');
-    const unassigned=credReq?precOffs.filter(o=>(o.credentials||[]).includes(credReq)):precOffs;
-    const unqualified=credReq?precOffs.filter(o=>!(o.credentials||[]).includes(credReq)):[];
+    const unassigned=precOffs.filter(o=>!canBoard(o,v));
+    const unqualified=precOffs.filter(o=>canBoard(o,v));
+    const reqNote=isSwatVeh?'SWAT officers only':(credNode?`Requires ${credNode.name}`:'');
     document.getElementById('modal-title').textContent=`Crew — ${v.name}`;
     document.getElementById('modal-body').innerHTML=`
-      <div style="font-size:12px;color:var(--t3);margin-bottom:12px">Capacity: ${assigned.length}/${cap}${credNode?` &nbsp;•&nbsp; <span style="color:var(--gold-l)">${credNode.icon} Requires ${credNode.name}</span>`:''}
+      <div style="font-size:12px;color:var(--t3);margin-bottom:12px">Capacity: ${assigned.length}/${cap}${reqNote?` &nbsp;•&nbsp; <span style="color:var(--gold-l)">🔒 ${reqNote}</span>`:''}
       </div>
       ${assigned.length?`<div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;margin-bottom:7px">ASSIGNED CREW</div>`+
-        assigned.map(o=>{const rk=RANKS.find(r=>r.id===o.rank);return`<div style="display:flex;align-items:center;gap:8px;padding:7px;background:var(--bg2);border-radius:5px;margin-bottom:5px">
+        assigned.map(o=>{const rk=RANKS.find(r=>r.id===o.rank);const role=offRole(o);return`<div style="display:flex;align-items:center;gap:8px;padding:7px;background:var(--bg2);border-radius:5px;margin-bottom:5px">
           <span style="font-size:20px">${o.emo}</span>
-          <div style="flex:1"><div style="font-size:12px;font-weight:700">${o.name}</div><div style="font-size:9px;color:var(--t3)">${rk?.name||o.rank}</div></div>
+          <div style="flex:1"><div style="font-size:12px;font-weight:700">${o.name}</div><div style="font-size:9px;color:var(--t3)">${role||rk?.name||o.rank}</div></div>
           <button class="btn btn-danger btn-xs" onclick="G.actions.unassOff('${o.id}','${vehId}')">Remove</button>
         </div>`}).join(''):''}
       ${assigned.length<cap&&unassigned.length?`
         <div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;margin:10px 0 7px">ADD OFFICER</div>`+
-        unassigned.map(o=>{const rk=RANKS.find(r=>r.id===o.rank);return`<div class="disp-unit" onclick="G.actions.assOff('${o.id}','${vehId}')">
+        unassigned.map(o=>{const rk=RANKS.find(r=>r.id===o.rank);const role=offRole(o);return`<div class="disp-unit" onclick="G.actions.assOff('${o.id}','${vehId}')">
           <span style="font-size:20px">${o.emo}</span>
-          <div style="flex:1"><div style="font-size:12px;font-weight:700">${o.name}</div><div style="font-size:9px;color:var(--t3)">${rk?.name||o.rank} • XP: ${o.xp.toLocaleString()}</div></div>
+          <div style="flex:1"><div style="font-size:12px;font-weight:700">${o.name}</div><div style="font-size:9px;color:var(--t3)">${role||rk?.name||o.rank}</div></div>
           <span style="font-size:10px;color:var(--blue-l)">Add →</span>
         </div>`}).join(''):''}
-      ${unqualified.length?`<div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;margin:10px 0 7px">MISSING CREDENTIALS (${unqualified.length})</div>`+
-        unqualified.map(o=>{const rk=RANKS.find(r=>r.id===o.rank);return`<div style="display:flex;align-items:center;gap:8px;padding:7px;background:var(--bg2);border-radius:5px;margin-bottom:5px;opacity:.45">
+      ${unqualified.length?`<div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;margin:10px 0 7px">NOT ELIGIBLE (${unqualified.length})</div>`+
+        unqualified.map(o=>{return`<div style="display:flex;align-items:center;gap:8px;padding:7px;background:var(--bg2);border-radius:5px;margin-bottom:5px;opacity:.45">
           <span style="font-size:20px">${o.emo}</span>
-          <div style="flex:1"><div style="font-size:12px;font-weight:700">${o.name}</div><div style="font-size:9px;color:var(--red-l)">🔒 Needs ${credNode?.name||credReq} certification</div></div>
+          <div style="flex:1"><div style="font-size:12px;font-weight:700">${o.name}</div><div style="font-size:9px;color:var(--red-l)">🔒 ${canBoard(o,v)}</div></div>
         </div>`}).join(''):''}
       ${assigned.length>=cap?`<div style="font-size:11px;color:var(--t3);margin-top:8px">Crew full — remove someone to add another</div>`:''}
     `;
@@ -2390,8 +2442,8 @@ const ui = {
     const creds=o.credentials||[];
     const curVeh=S.vehicles.find(v=>v.officerIds.includes(offId));
     const baseFilter=v=>v.precinctId===o.precinctId&&v.status==='available'&&v.officerIds.length<(VEH_TYPES[v.type]?.cap||2)&&v.id!==(curVeh?.id);
-    const avVehs=S.vehicles.filter(v=>baseFilter(v)&&(!VEH_CRED_REQ[v.type]||creds.includes(VEH_CRED_REQ[v.type])));
-    const lockedVehs=S.vehicles.filter(v=>baseFilter(v)&&VEH_CRED_REQ[v.type]&&!creds.includes(VEH_CRED_REQ[v.type]));
+    const avVehs=S.vehicles.filter(v=>baseFilter(v)&&!canBoard(o,v));
+    const lockedVehs=S.vehicles.filter(v=>baseFilter(v)&&canBoard(o,v));
     document.getElementById('modal-title').textContent=`Assign ${o.name}`;
     document.getElementById('modal-body').innerHTML=`
       ${curVeh?`<div style="padding:8px;background:var(--bg2);border-radius:5px;margin-bottom:11px;font-size:11px;color:var(--t2)">Currently in: <strong>${curVeh.name}</strong>
@@ -2404,10 +2456,10 @@ const ui = {
           <span style="font-size:10px;color:var(--blue-l)">Assign →</span>
         </div>`}).join(''):''}
       ${!avVehs.length&&!lockedVehs.length?`<div style="color:var(--t3);font-size:11px">No available vehicles in this precinct</div>`:''}
-      ${lockedVehs.length?`<div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;margin:10px 0 7px">REQUIRES CREDENTIALS</div>`+
-        lockedVehs.map(v=>{const vt=VEH_TYPES[v.type];const cn=EDU_NODE_MAP[VEH_CRED_REQ[v.type]];return`<div style="display:flex;align-items:center;gap:9px;padding:9px 11px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;margin-bottom:5px;opacity:.45">
+      ${lockedVehs.length?`<div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;margin:10px 0 7px">NOT ELIGIBLE</div>`+
+        lockedVehs.map(v=>{const vt=VEH_TYPES[v.type];return`<div style="display:flex;align-items:center;gap:9px;padding:9px 11px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;margin-bottom:5px;opacity:.45">
           <span style="font-size:22px">${vt?.icon||'🚗'}</span>
-          <div style="flex:1"><div style="font-size:12px;font-weight:700">${v.name}</div><div style="font-size:10px;color:var(--red-l)">🔒 Needs ${cn?.name||VEH_CRED_REQ[v.type]}</div></div>
+          <div style="flex:1"><div style="font-size:12px;font-weight:700">${v.name}</div><div style="font-size:10px;color:var(--red-l)">🔒 ${canBoard(o,v)}</div></div>
         </div>`}).join(''):''}
     `;
     document.getElementById('modal-ftr').innerHTML=`<button class="btn btn-ghost" onclick="G.ui.closeModal()">Close</button>`;
@@ -2509,31 +2561,21 @@ const actions = {
     const v=S.vehicles.find(v=>v.id===vehId);
     const o=S.officers.find(o=>o.id===offId);
     if(!v||!o)return;
-    const credReq=VEH_CRED_REQ[v.type];
-    if(credReq&&!(o.credentials||[]).includes(credReq)){
-      const credNode=EDU_NODE_MAP[credReq];
-      ui.toast(`⛔ ${o.name} needs ${credNode?.name||credReq} certification`,'error');
-      return;
-    }
-    // FIX: remove from all other vehicles first
-    S.vehicles.forEach(vv=>{
-      const i=vv.officerIds.indexOf(offId);
-      if(i>=0)vv.officerIds.splice(i,1);
-    });
+    const reason=canBoard(o,v);
+    if(reason){ui.toast(`⛔ ${reason}`,'error');return;}
+    // Remove from all other vehicles first
+    S.vehicles.forEach(vv=>{const i=vv.officerIds.indexOf(offId);if(i>=0)vv.officerIds.splice(i,1)});
     v.officerIds.push(offId);
     o.vehicleId=vehId;
-    // FIX: properly handle precinct transfers when assigning to a vehicle in a different precinct
     if(o.precinctId!==v.precinctId){
-      const oldPrec=S.precincts.find(p=>p.id===o.precinctId);
-      const newPrec=S.precincts.find(p=>p.id===v.precinctId);
-      if(oldPrec){const i=oldPrec.officerIds.indexOf(offId);if(i>=0)oldPrec.officerIds.splice(i,1)}
-      if(newPrec&&!newPrec.officerIds.includes(offId))newPrec.officerIds.push(offId);
+      const oldP=S.precincts.find(p=>p.id===o.precinctId);
+      const newP=S.precincts.find(p=>p.id===v.precinctId);
+      if(oldP){const i=oldP.officerIds.indexOf(offId);if(i>=0)oldP.officerIds.splice(i,1)}
+      if(newP&&!newP.officerIds.includes(offId))newP.officerIds.push(offId);
       o.precinctId=v.precinctId;
     }
     ui.toast(`✅ ${o.name} assigned to ${v.name}`,'success');
-    ui.closeModal();
-    ui.renderPersonnel();
-    ui.renderFleet();
+    ui.closeModal();ui.renderPersonnel();ui.renderFleet();
   },
 
   unassOff(offId,vehId){
