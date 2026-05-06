@@ -793,8 +793,22 @@ const VEH_SWAT_ONLY = new Set(['swat_van','armored','bearcat']);
 // Helper: is officer SWAT-specialized?
 function isSwat(o){return offSpecialty(o)?.id==='swat';}
 
+function isEducationComplete(o){
+  const sp=offSpecialty(o);
+  if(!sp)return false;
+  const creds=o.credentials||[];
+  return sp.nodes.every(n=>creds.includes(n.id));
+}
+
+function incStat(obj,key){
+  if(!obj)return;
+  if(!obj[key])obj[key]=0;
+  obj[key]++;
+}
+
 // Helper: can officer board a vehicle? Returns null if ok, string reason if not.
 function canBoard(o,v){
+  if(o.education)return `Officer is currently in training`;
   const sp=offSpecialty(o);
   // SWAT officers cannot board non-SWAT vehicles (they'd crowd out patrol officers and it makes no sense operationally)
   if(sp?.id==='swat'&&!VEH_SWAT_ONLY.has(v.type)&&v.type!=='k9_unit'){
@@ -812,6 +826,53 @@ function canBoard(o,v){
   return null;
 }
 
+function canDispatchVehicle(v,call){
+  if(!v)return `Invalid unit`;
+  if(v.status!=='available')return `Unit not available`;
+  if(!Array.isArray(v.officerIds)||v.officerIds.length===0)return `No officer assigned`;
+  const vt=VEH_TYPES[v.type];
+  const cap=vt?.cap??2;
+  if(v.officerIds.length>cap)return `Over capacity (${v.officerIds.length}/${cap})`;
+  // Validate each officer is present, available, not training, and qualified for the vehicle.
+  for(const oid of v.officerIds){
+    const o=S.officers.find(o=>o.id===oid);
+    if(!o)return `Missing officer`;
+    if(o.status!=='available')return `${o.name} unavailable`;
+    if(o.education)return `${o.name} in training`;
+    const reason=canBoard(o,v);
+    if(reason)return reason;
+  }
+  // Optional: if dispatching to a call, enforce same-precinct availability (if you ever add cross-precinct constraints later)
+  if(call&&call.status!=='waiting')return `Call not waiting`;
+  return null;
+}
+
+function chooseAutoDispatchVehicles(call){
+  // Pick closest eligible units until we meet minU (do not exceed maxU)
+  const cx=call.x??50,cy=call.y??50;
+  const eligible=availVehs()
+    .filter(v=>!canDispatchVehicle(v,call))
+    .map(v=>{
+      const prec=S.precincts.find(p=>p.id===v.precinctId);
+      const px=prec?.x??50,py=prec?.y??50;
+      return {v,dist:calcDist(px,py,cx,cy)};
+    })
+    .sort((a,b)=>a.dist-b.dist)
+    .map(x=>x.v);
+
+  const sel=[];
+  let crew=0;
+  for(const v of eligible){
+    const vc=v.officerIds.length;
+    if(crew>=call.minU)break;
+    if(crew+vc>call.maxU)continue;
+    sel.push(v.id);
+    crew+=vc;
+  }
+  if(crew<call.minU)return [];
+  return sel;
+}
+
 // Helper: get the specialty an officer currently belongs to (or null)
 function offSpecialty(o){
   const creds=o.credentials||[];
@@ -823,6 +884,7 @@ function offSpecialty(o){
 
 // Helper: get available next nodes for an officer (same specialty only, prereqs met)
 function offAvailNodes(o){
+  if(isEducationComplete(o))return [];
   const creds=o.credentials||[];
   const sp=offSpecialty(o);
   const nodes=sp?sp.nodes:EDU_SPECIALTIES.flatMap(s=>s.nodes.filter(n=>n.req.length===0));
@@ -873,6 +935,25 @@ let S = {
 let _nextCall = 10;
 let _loop = null;
 let _eduPromptQueue = [];
+
+function runSelfTests(){
+  const errs=[];
+  const assert=(cond,msg)=>{if(!cond)errs.push(msg)};
+  const call={id:'_t',status:'waiting',minU:1,maxU:10,x:50,y:50};
+  const v={id:'_v',type:'cruiser',status:'available',precinctId:'prec_1',officerIds:[]};
+  assert(!!canDispatchVehicle(v,call),`empty vehicle should be ineligible`);
+  const o={id:'_o',name:'Test',status:'available',education:{path:'x',ticksLeft:1,totalTicks:1},credentials:[]};
+  S.officers.push(o);
+  v.officerIds=['_o'];
+  assert(!!canDispatchVehicle(v,call),`training officer should be ineligible`);
+  S.officers=S.officers.filter(x=>x.id!=='_o');
+  if(errs.length){
+    console.error('Self-tests failed:',errs);
+    return false;
+  }
+  console.log('Self-tests passed');
+  return true;
+}
 
 // ═══════════════════════════════════════════
 // UTILS
@@ -964,7 +1045,10 @@ function spawnCall(){
   if(effBool('autoP3')&&call.pri===3){
     setTimeout(()=>{
       const c=S.calls.find(c=>c.id===call.id&&c.status==='waiting');
-      if(c){const av=availVehs();if(av.length>0){dispatch(call.id,[av[0].id]);ui.toast(`🤖 AI Dispatch → ${call.name}`,'info')}}
+      if(c){
+        const ids=chooseAutoDispatchVehicles(c);
+        if(ids.length&&dispatch(call.id,ids))ui.toast(`🤖 AI Dispatch → ${call.name}`,'info');
+      }
     },1800);
   }
 }
@@ -974,7 +1058,17 @@ function dispatch(callId,vehIds){
   if(!call||call.status!=='waiting')return false;
   const vehs=vehIds.map(id=>S.vehicles.find(v=>v.id===id)).filter(Boolean);
   if(!vehs.length)return false;
-  call.status='responding';call.assignedVehs=vehIds;
+  const assignedVehIds=vehs.map(v=>v.id);
+  // Validate all selected units before mutating call state
+  const bad=vehs.map(v=>({v,reason:canDispatchVehicle(v,call)})).filter(x=>x.reason);
+  if(bad.length){
+    const msg=`🚫 Dispatch blocked: ${bad[0].reason}`+(bad.length>1?` (+${bad.length-1} more)`:'');
+    ui.toast(msg,'error');
+    if(!S.stats.dispatchBlocked)S.stats.dispatchBlocked={};
+    incStat(S.stats.dispatchBlocked,bad[0].reason);
+    return false;
+  }
+  call.status='responding';call.assignedVehs=assignedVehIds;
 
   const rb=eff('respBonus');
   const db=eff('durBonus');
@@ -984,7 +1078,7 @@ function dispatch(callId,vehIds){
   const baseDur=rnd(call.durMin,call.durMax);
 
   // Total officers across all dispatched vehicles (officers count as "units")
-  const totalCrew=vehs.reduce((s,v)=>s+Math.max(1,v.officerIds.length),0);
+  const totalCrew=vehs.reduce((s,v)=>s+v.officerIds.length,0);
 
   // Unit-count bonus: more officers than minimum speeds up scene. Scales linearly min→max → 0%→40% faster.
   const unitRange=Math.max(1,call.maxU-call.minU);
@@ -1160,7 +1254,7 @@ function tick(){
     const onScene=S.vehicles.filter(v=>v.callId===c.id&&v.phase==='on_scene');
     if(!onScene.length)return;
     const progressThisTick=onScene.reduce((sum,v)=>{
-      if(!v.officerIds.length)return sum+0.5; // empty vehicle still contributes presence
+      if(!v.officerIds.length)return sum; // empty vehicles should not meaningfully progress calls
       return sum+v.officerIds.reduce((s,oid)=>{
         const o=S.officers.find(o=>o.id===oid);
         if(!o)return s+0.3;
@@ -1372,6 +1466,28 @@ function load(){
           const v=S.vehicles.find(v=>v.officerIds.includes(o.id));
           if(!v||v.status==='available')o.status='available';
         }
+      });
+      // Migrate dispatch block telemetry container
+      if(!S.stats.dispatchBlocked)S.stats.dispatchBlocked={};
+      // Fix vehicle/officer integrity on load (dedupe, drop missing, enforce capacity, one-vehicle-per-officer)
+      const seenOff=new Set();
+      S.vehicles.forEach(v=>{
+        if(!Array.isArray(v.officerIds))v.officerIds=[];
+        const vt=VEH_TYPES[v.type];
+        const cap=vt?.cap??2;
+        // Filter invalid/missing officers and enforce uniqueness across vehicles
+        v.officerIds=v.officerIds.filter(oid=>{
+          const o=S.officers.find(o=>o.id===oid);
+          if(!o)return false;
+          if(seenOff.has(oid))return false;
+          seenOff.add(oid);
+          return true;
+        }).slice(0,cap);
+      });
+      // Ensure officer.vehicleId matches actual assignment
+      S.officers.forEach(o=>{
+        const v=S.vehicles.find(v=>Array.isArray(v.officerIds)&&v.officerIds.includes(o.id));
+        o.vehicleId=v?.id||null;
       });
       // FIX: ensure all precincts have map coords
       S.precincts.forEach((p,i)=>{
@@ -2085,7 +2201,7 @@ const ui = {
   // ── EDUCATION ──
   renderEducation(){
     const inTraining=S.officers.filter(o=>o.education);
-    const avail=S.officers.filter(o=>!o.education&&o.status==='available');
+    const avail=S.officers.filter(o=>!o.education&&o.status==='available'&&!isEducationComplete(o));
     const dispatched=S.officers.filter(o=>!o.education&&o.status!=='available');
     let html='';
     if(!S.officers.length){
@@ -2104,9 +2220,10 @@ const ui = {
     const edu=o.education;
     const sp=offSpecialty(o);
     const role=offRole(o);
+    const doneAll=isEducationComplete(o);
     const nodeInProgress=edu?EDU_NODE_MAP[edu.path]:null;
     const pct=edu?Math.max(0,Math.min(100,(1-edu.ticksLeft/edu.totalTicks)*100)):0;
-    const canEnroll=!edu&&o.status==='available';
+    const canEnroll=!edu&&o.status==='available'&&!doneAll;
 
     // Credential badges
     const credBadges=creds.length
@@ -2129,7 +2246,11 @@ const ui = {
         <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--t3);margin-bottom:6px"><span>${Math.round(pct)}% complete</span><span>⏱️ ${fmtCD(edu.ticksLeft)}</span></div>
         <button class="btn btn-danger btn-xs w-full" onclick="G.actions.cancelEdu('${o.id}')">Cancel Training</button>
       `:`
-        <div style="font-size:9px;color:var(--t3);margin-bottom:5px">${o.status!=='available'?'🚓 Unavailable while dispatched':'Ready for training'}</div>
+        <div style="font-size:9px;color:var(--t3);margin-bottom:5px">${
+          o.status!=='available'?'🚓 Unavailable while dispatched':
+          doneAll?'✅ Fully certified — no training remaining':
+          'Ready for training'
+        }</div>
         <button class="btn btn-primary btn-sm w-full" ${!canEnroll?'disabled':''} onclick="G.ui.openEduPathModal('${o.id}')">🎓 ${sp?'Continue Training':'Choose Specialty'}</button>
       `}
     </div>`;
@@ -2316,6 +2437,7 @@ const ui = {
     const c=S.calls.find(c=>c.id===callId);if(!c)return;
     const sel=this.dispSel[callId]||[];
     const av=availVehs();
+    const eligibleCount=av.filter(v=>!canDispatchVehicle(v,c)).length;
 
     // Group available vehicles by precinct for clarity
     const byPrec={};
@@ -2335,11 +2457,14 @@ const ui = {
       unitListHtml+=vehs.map(v=>{
         const vt=VEH_TYPES[v.type];const isSel=sel.includes(v.id);
         const offs=S.officers.filter(o=>v.officerIds.includes(o.id));
-        return `<div class="disp-unit${isSel?' sel':''}" onclick="G.ui._togDisp('${callId}','${v.id}')">
+        const reason=canDispatchVehicle(v,c);
+        const na=!!reason;
+        const crewLbl=offs.length?offs.map(o=>o.name.split(' ')[0]).join(', '):'No crew';
+        return `<div class="disp-unit${isSel?' sel':''}${na?' na':''}" onclick="${na?'':`G.ui._togDisp('${callId}','${v.id}')`}">
           <span style="font-size:24px">${vt?.icon||'🚗'}</span>
           <div style="flex:1">
             <div style="font-size:12px;font-weight:700">${v.name} — ${vt?.name||v.type}</div>
-            <div style="font-size:10px;color:var(--t3)">${offs.length?offs.map(o=>o.name.split(' ')[0]).join(', '):'No crew'} • Speed ${vt?.spd||1}x</div>
+            <div style="font-size:10px;color:${na?'var(--red-l)':'var(--t3)'}">${na?`⛔ ${reason}`:`${crewLbl} • Speed ${vt?.spd||1}x`}</div>
           </div>
           <div class="disp-chk" style="border-color:${isSel?'var(--blue)':'var(--bg4)'};background:${isSel?'var(--blue)':'transparent'}">${isSel?'✓':''}</div>
         </div>`;
@@ -2360,12 +2485,12 @@ const ui = {
           </div>
         </div>
       </div>
-      <div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;text-transform:uppercase;margin-bottom:8px">Available Units (${av.length})</div>
+      <div style="font-size:9px;letter-spacing:2px;color:var(--t3);font-family:monospace;text-transform:uppercase;margin-bottom:8px">Units (${eligibleCount}/${av.length} eligible)</div>
       ${av.length===0?`<div class="empty-state"><span class="empty-icon">⚠️</span><div class="empty-title">No Units Available</div><div class="empty-desc">All units are deployed</div></div>`:
         `<div class="disp-unit-list">${unitListHtml}</div>`
       }
     `;
-    const selOfficerCount=sel.reduce((s,vid)=>{const v=S.vehicles.find(v=>v.id===vid);return s+Math.max(1,v?.officerIds?.length||0)},0);
+    const selOfficerCount=sel.reduce((s,vid)=>{const v=S.vehicles.find(v=>v.id===vid);return s+(v?.officerIds?.length||0)},0);
     const canDisp=selOfficerCount>=c.minU;
     document.getElementById('modal-ftr').innerHTML=`
       <div style="flex:1;font-size:11px;color:${canDisp?'var(--green-l)':'var(--t3)'}">
@@ -2379,14 +2504,17 @@ const ui = {
   _togDisp(callId,vehId){
     if(!this.dispSel[callId])this.dispSel[callId]=[];
     const c=S.calls.find(c=>c.id===callId);if(!c)return;
+    const vObj=S.vehicles.find(v=>v.id===vehId);
+    const reason=canDispatchVehicle(vObj,c);
+    if(reason){ui.toast(`🚫 ${reason}`,'error');if(!S.stats.dispatchBlocked)S.stats.dispatchBlocked={};incStat(S.stats.dispatchBlocked,reason);return;}
     const idx=this.dispSel[callId].indexOf(vehId);
     if(idx>=0){
       this.dispSel[callId].splice(idx,1);
     } else {
       // Count officers in currently selected vehicles + this vehicle
-      const curOfficers=this.dispSel[callId].reduce((s,vid)=>{const v=S.vehicles.find(v=>v.id===vid);return s+Math.max(1,v?.officerIds?.length||0)},0);
-      const newVeh=S.vehicles.find(v=>v.id===vehId);
-      const newOfficers=Math.max(1,newVeh?.officerIds?.length||0);
+      const curOfficers=this.dispSel[callId].reduce((s,vid)=>{const v=S.vehicles.find(v=>v.id===vid);return s+(v?.officerIds?.length||0)},0);
+      const newVeh=vObj;
+      const newOfficers=(newVeh?.officerIds?.length||0);
       if(curOfficers+newOfficers<=c.maxU)this.dispSel[callId].push(vehId);
       else ui.toast(`⛔ Max ${c.maxU} officers for this call`,'warning');
     }
