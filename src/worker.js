@@ -1,11 +1,22 @@
 // Worker entry: routes WebSocket signaling to a Durable Object,
-// otherwise serves static assets from ./_site.
+// otherwise serves static assets from env.ASSETS (directory set in wrangler.jsonc).
 //
 // This file is intentionally repo-name-agnostic. Any URL ending in
 // /api/signal/ws (e.g. /ae3/api/signal/ws) routes to the DO.
 
 import { SignalingRoom } from './signaling-do.js';
 export { SignalingRoom };
+
+function clientIp(request) {
+  const cf = request.headers.get('cf-connecting-ip');
+  if (cf) return cf.trim();
+  const xff = request.headers.get('x-forwarded-for');
+  if (xff) {
+    const first = xff.split(',')[0];
+    if (first) return first.trim();
+  }
+  return '127.0.0.1';
+}
 
 function normalizeIPtoRoom(ip) {
   if (ip.includes(':')) {
@@ -35,16 +46,13 @@ export default {
         });
       }
 
-      const roomParam = url.searchParams.get('room');
+      const roomParam = url.searchParams.get('room')?.trim();
       let roomName;
       if (roomParam) {
-        roomName = `room:code:${roomParam.replace(/[^a-zA-Z0-9-_]/g, '').slice(0, 20)}`;
+        const code = roomParam.replace(/[^a-zA-Z0-9-_]/g, '').slice(0, 20);
+        roomName = code ? `room:code:${code}` : normalizeIPtoRoom(clientIp(request));
       } else {
-        const ip =
-          request.headers.get('cf-connecting-ip') ||
-          request.headers.get('x-forwarded-for') ||
-          '127.0.0.1';
-        roomName = normalizeIPtoRoom(ip);
+        roomName = normalizeIPtoRoom(clientIp(request));
       }
 
       const id = env.SIGNALING_ROOM.idFromName(roomName);

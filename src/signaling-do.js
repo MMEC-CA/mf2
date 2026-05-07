@@ -15,7 +15,7 @@ export class SignalingRoom {
 
     // WebSocket upgrade
     if (request.headers.get('Upgrade') === 'websocket') {
-      const peerId = url.searchParams.get('peerId');
+      const peerId = url.searchParams.get('peerId')?.trim();
       if (!peerId) {
         return new Response('peerId required', { status: 400 });
       }
